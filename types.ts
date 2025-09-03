@@ -70,6 +70,9 @@ export interface Playlist {
   image_path: string | null;
   created_at: string;
   updated_at: string;
+  nft_token_id?: string;
+  nft_serial_number?: string;
+  nft_metadata_uri?: string; // Add this field
 }
 
 export interface PlaylistWithSongs extends Playlist {

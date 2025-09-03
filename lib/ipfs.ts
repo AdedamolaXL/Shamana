@@ -1,18 +1,29 @@
 // lib/ipfs.ts
-export const getIPFSGatewayUrl = (ipfsUrl: string): string => {
-  if (!ipfsUrl) return '';
-  
-  // Use environment variable with fallback
-  const gateway = process.env.NEXT_PUBLIC_PINATA_GATEWAY_URL || "https://gateway.pinata.cloud";
-  
-  if (ipfsUrl.startsWith('ipfs://')) {
-    return ipfsUrl.replace('ipfs://', `${gateway}/ipfs/`);
+import pinataSDK from '@pinata/sdk';
+
+const pinata = new pinataSDK({ 
+  pinataJWTKey: process.env.PINATA_JWT 
+});
+
+export async function uploadToIPFS(data: any) {
+  try {
+    console.log('Uploading metadata to IPFS using Pinata SDK...');
+    
+    const options = {
+      pinataMetadata: {
+        name: `playlist-metadata-${Date.now()}`,
+      },
+      pinataOptions: {
+        cidVersion: 0
+      }
+    };
+    
+    const result = await pinata.pinJSONToIPFS(data, options);
+    console.log('IPFS upload successful, CID:', result.IpfsHash);
+    
+    return result.IpfsHash;
+  } catch (error) {
+    console.error('IPFS upload error:', error);
+    throw error;
   }
-  
-  if (ipfsUrl.startsWith('Qm') || ipfsUrl.startsWith('baf')) {
-    return `${gateway}/ipfs/${ipfsUrl}`;
-  }
-  
-  // Return as-is if it's already a URL
-  return ipfsUrl;
-};
+}

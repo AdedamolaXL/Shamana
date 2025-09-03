@@ -1,10 +1,10 @@
+// components/CreatePlaylistModal.tsx
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
-import { useSupabaseClient } from "@supabase/auth-helpers-react";
 
 import Modal from "./Modal";
 import Input from "./Input";
@@ -24,7 +24,6 @@ const CreatePlaylistModal: React.FC<CreatePlaylistModalProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useUser();
-  const supabaseClient = useSupabaseClient();
   const router = useRouter();
 
   const {
@@ -48,31 +47,32 @@ const CreatePlaylistModal: React.FC<CreatePlaylistModalProps> = ({
         return;
       }
 
-      const { data, error } = await supabaseClient
-        .from("playlists")
-        .insert({
-          user_id: user.id,
-          name: values.name,
-          description: values.description
-        })
-        .select()
-        .single();
+      // Call your API route instead of using Supabase directly
+      const response = await fetch('/api/playlists/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
 
-      if (error) {
-        throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create playlist');
       }
 
+      const data = await response.json();
       toast.success("Playlist created!");
       reset();
       onChange(false);
       
-      if (onPlaylistCreated && data) {
+      if (onPlaylistCreated && data.id) {
         onPlaylistCreated(data.id);
       }
       
       router.refresh();
-    } catch (error) {
-      toast.error("Something went wrong");
+    } catch (error: any) {
+      toast.error(error.message || "Something went wrong");
     } finally {
       setIsLoading(false);
     }

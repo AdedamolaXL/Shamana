@@ -68,38 +68,39 @@ const AddToPlaylistButton: React.FC<AddToPlaylistButtonProps> = ({ songId }) => 
     }
   };
 
-  const handlePlaylistCreated = async (playlistId: string) => {
-    // After creating a playlist, add the song to it
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/playlists/add', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ playlistId, songId }),
-      });
+ // In AddToPlaylistButton.tsx
+const handlePlaylistCreated = async (playlistId: string) => {
+  // After creating a playlist, add the song to it
+  setIsLoading(true);
+  try {
+    const response = await fetch('/api/playlists/add', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ playlistId, songId }),
+    });
 
-      if (!response.ok) {
-        throw new Error('Failed to add song to playlist');
-      }
-
-      setIsOpen(false);
-      setIsCreateModalOpen(false);
-      toast.success("Playlist created and song added!");
-      
-      // Add a small delay before redirecting to ensure the playlist is available
-      setTimeout(() => {
-        router.push(`/playlists/${playlistId}`);
-      }, 500);
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to add song to playlist");
-    } finally {
-      setIsLoading(false);
+    if (!response.ok) {
+      throw new Error('Failed to add song to playlist');
     }
-  };
 
+    setIsOpen(false);
+    setIsCreateModalOpen(false);
+    toast.success("Playlist created and song added!");
+    
+    // Add a small delay before redirecting to ensure the playlist is available
+    setTimeout(() => {
+      router.push(`/playlists/${playlistId}`);
+    }, 500);
+  } catch (error) {
+    console.error(error);
+    toast.error("Failed to add song to playlist");
+  } finally {
+    setIsLoading(false);
+  }
+};
+  
   return (
     <>
       <button
