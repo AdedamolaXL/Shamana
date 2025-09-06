@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import { activateHederaAccount } from '@/lib/hedera-account';
+import { activateHederaAccount } from '@/lib/hedera-account'; // Import the consolidated function
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     
     const { amount } = await request.json();
     
-    // Activate the user's Hedera account
+    // Activate the user's Hedera account using the consolidated function
     const result = await activateHederaAccount(session.user.id, amount || 10);
     
     return NextResponse.json(result);

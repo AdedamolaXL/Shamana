@@ -11,6 +11,7 @@ import {
 import { uploadToIPFS } from '@/lib/ipfs';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
+import { activateHederaAccount } from '@/lib/hedera-account'; 
 
 // Flexible private key parser from your example
 function parsePriv(str: string) {
@@ -18,90 +19,6 @@ function parsePriv(str: string) {
     return PrivateKey.fromStringDer(str);
   } catch {
     return PrivateKey.fromStringDer(str);
-  }
-}
-
-// Account activation function - only transfers HBAR to existing alias
-async function activateHederaAccount(userId: string, amount: number = 10) {
-  // Initialize Supabase client
-  const supabase = createServerComponentClient({ cookies });
-  
-  // Get user's existing Hedera keys (should already exist from signup)
-  const { data: user, error: fetchError } = await supabase
-    .from('users')
-    .select('hedera_public_key, hedera_private_key_encrypted, hedera_evm_address, hedera_account_id')
-    .eq('id', userId)
-    .single();
-  
-  if (fetchError || !user) {
-    throw new Error('User not found in database');
-  }
-  
-  if (!user.hedera_evm_address) {
-    throw new Error('User does not have Hedera EVM address');
-  }
-  
-  // If account is already activated, return the existing account ID
-  if (user.hedera_account_id) {
-    console.log(`Account already activated: ${user.hedera_account_id}`);
-    return {
-      success: true,
-      accountId: user.hedera_account_id,
-      alreadyActivated: true
-    };
-  }
-  
-  // Initialize Hedera client
-  const operatorId = AccountId.fromString(process.env.HEDERA_OPERATOR_ID!);
-  const operatorKey = parsePriv(process.env.HEDERA_OPERATOR_KEY!);
-  
-  const client = Client.forTestnet().setOperator(operatorId, operatorKey);
-  
-  try {
-    // Create alias account ID from the existing EVM address
-    const aliasAccountId = AccountId.fromString(`0.0.${user.hedera_evm_address}`);
-    
-    console.log(`Activating account for EVM address: ${user.hedera_evm_address}`);
-    console.log(`Alias account ID: ${aliasAccountId.toString()}`);
-    
-    // Transfer HBAR to activate the account
-    const transferTx = await new TransferTransaction()
-      .addHbarTransfer(operatorId, new Hbar(-amount))
-      .addHbarTransfer(aliasAccountId, new Hbar(amount))
-      .freezeWith(client);
-    
-    const transferTxSign = await transferTx.sign(operatorKey);
-    const transferSubmit = await transferTxSign.execute(client);
-    const transferRx = await transferSubmit.getReceipt(client);
-    
-    console.log(`Account activation transaction status: ${transferRx.status}`);
-    
-    // Update user record with the activated account ID
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ 
-        hedera_account_id: aliasAccountId.toString()
-      })
-      .eq('id', userId);
-    
-    if (updateError) {
-      console.error('Failed to update user with account ID:', updateError);
-      throw new Error(`Database update failed: ${updateError.message}`);
-    }
-    
-    console.log(`Account successfully activated: ${aliasAccountId.toString()}`);
-    
-    return {
-      success: true,
-      accountId: aliasAccountId.toString(),
-      transactionId: transferSubmit.transactionId.toString(),
-      alreadyActivated: false
-    };
-  } catch (error) {
-    console.error('Failed to activate Hedera account:', error);
-    throw error;
-  } finally {
-    await client.close();
   }
 }
 

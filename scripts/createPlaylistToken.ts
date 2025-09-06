@@ -1,9 +1,9 @@
 // scripts/createPlaylistToken.ts
-const fs = require('fs');
-const path = require('path');
+var fs = require('fs');
+var path = require('path');
 
 // Load environment variables manually from .env.local
-const envPath = path.resolve(__dirname, '../.env.local');
+var envPath = path.resolve(__dirname, '../.env.local');
 if (fs.existsSync(envPath)) {
   const envFile = fs.readFileSync(envPath, 'utf8');
   envFile.split('\n').forEach((line: string) => { // Added type annotation here
@@ -20,7 +20,7 @@ console.log('Environment variables loaded from .env.local:');
 console.log('HEDERA_OPERATOR_ID:', process.env.HEDERA_OPERATOR_ID || 'Not set');
 console.log('HEDERA_OPERATOR_KEY:', process.env.HEDERA_OPERATOR_KEY ? 'Set' : 'Not set');
 
-const {
+var {
   Hbar,
   Client,
   AccountId,
@@ -31,7 +31,7 @@ const {
 } = require("@hashgraph/sdk");
 
 // Flexible private key parser
-function parsePriv(str: string) {
+function parsePrivt(str: string) {
   try {
     return PrivateKey.fromStringDer(str);
   } catch {
@@ -45,7 +45,7 @@ async function createPlaylistToken() {
   }
 
   const operatorId = AccountId.fromString(process.env.HEDERA_OPERATOR_ID);
-  const operatorKey = parsePriv(process.env.HEDERA_OPERATOR_KEY);
+  const operatorKey = parsePrivt(process.env.HEDERA_OPERATOR_KEY);
   
   const client = Client.forTestnet().setOperator(operatorId, operatorKey);
   client.setDefaultMaxTransactionFee(new Hbar(20));

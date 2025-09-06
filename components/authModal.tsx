@@ -1,4 +1,3 @@
-// components/authModal.tsx
 "use client";
 
 import { useSupabaseClient, useSessionContext } from "@supabase/auth-helpers-react"
@@ -9,6 +8,7 @@ import { useEffect, useState } from "react";
 import { generateHederaKeys, encryptPrivateKey } from '@/lib/hedera-keys'
 import useAuthModal from "@/hooks/useAuthModal";
 import Modal from "./Modal";
+import { useHederaDid } from '@/hooks/useHederaDID';
 
 const AuthModal = () => {
     const supabaseClient = useSupabaseClient();
@@ -16,6 +16,8 @@ const AuthModal = () => {
     const { session } = useSessionContext();
     const { onClose, isOpen } = useAuthModal();
     const [isCreatingUser, setIsCreatingUser] = useState(false);
+    const { createUserDid } = useHederaDid();
+
 
     useEffect(() => {
         if (session) {
@@ -29,43 +31,26 @@ const AuthModal = () => {
     }
 
     useEffect(() => {
-        const createUserRecord = async () => {
-            if (session && session.user && session.user.id && !isCreatingUser) {
-                setIsCreatingUser(true);
-                try {
-                    console.log('Creating user record for:', session.user.id);
-                    
-                    // Generate Hedera keys
-                    const { privateKey, publicKey, evmAddress } = generateHederaKeys();
-                    const encryptedPrivateKey = encryptPrivateKey(privateKey);
+  const createUserRecord = async () => {
+    if (session && session.user && session.user.id && !isCreatingUser) {
+      setIsCreatingUser(true);
+      try {
+        console.log('Creating user record for:', session.user.id);
+        
+        // Create DID via API
+        await createUserDid(session.user.id, session.user.email || '');
+        
+        console.log('User DID created successfully');
+      } catch (error) {
+        console.error('Error in user creation process:', error);
+      } finally {
+        setIsCreatingUser(false);
+      }
+    }
+  };
 
-                    // Use upsert to either insert or update the user record
-                    const { error } = await supabaseClient
-                        .from('users')
-                        .upsert({
-                            id: session.user.id,
-                            hedera_public_key: publicKey.toStringDer(),
-                            hedera_private_key_encrypted: encryptedPrivateKey,
-                            hedera_evm_address: evmAddress
-                        }, {
-                            onConflict: 'id'
-                        });
-
-                    if (error) {
-                        console.error('Failed to create/update user record:', error);
-                    } else {
-                        console.log('User record created/updated successfully');
-                    }
-                } catch (error) {
-                    console.error('Error in user creation process:', error);
-                } finally {
-                    setIsCreatingUser(false);
-                }
-            }
-        };
-
-        createUserRecord();
-    }, [session, supabaseClient, isCreatingUser]);
+  createUserRecord();
+}, [session, isCreatingUser, createUserDid]);
 
     return (
         <Modal title="Welcome to my project" description="Dont want to enter your info? dont worry, use krinsproject@gmail.com and aaaaaaaa" isOpen={isOpen} onChange={onChange}>

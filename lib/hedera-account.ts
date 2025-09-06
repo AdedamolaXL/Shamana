@@ -1,4 +1,3 @@
-// lib/hedera-account.ts
 import {
   Client,
   Hbar,
@@ -23,7 +22,7 @@ export async function activateHederaAccount(userId: string, amount: number = 10)
   // Get user's Hedera keys
   const { data: user, error } = await supabase
     .from('users')
-    .select('hedera_public_key, hedera_private_key_encrypted, hedera_evm_address')
+    .select('hedera_public_key, hedera_private_key_encrypted, hedera_evm_address, hedera_account_id')
     .eq('id', userId)
     .single();
   
@@ -36,7 +35,20 @@ export async function activateHederaAccount(userId: string, amount: number = 10)
     throw new Error('User not found');
   }
   
-  // Rest of the function remains the same...
+  // If account is already activated, return the existing account ID
+  if (user.hedera_account_id) {
+    console.log(`Account already activated: ${user.hedera_account_id}`);
+    return {
+      success: true,
+      accountId: user.hedera_account_id,
+      alreadyActivated: true
+    };
+  }
+  
+  if (!user.hedera_evm_address) {
+    throw new Error('User does not have Hedera EVM address');
+  }
+  
   // Initialize Hedera client
   const operatorId = AccountId.fromString(process.env.HEDERA_OPERATOR_ID!);
   const operatorKey = PrivateKey.fromStringDer(process.env.HEDERA_OPERATOR_KEY!);
@@ -69,12 +81,14 @@ export async function activateHederaAccount(userId: string, amount: number = 10)
     
     if (updateError) {
       console.error('Failed to update user with account ID:', updateError);
+      throw new Error(`Database update failed: ${updateError.message}`);
     }
     
     return {
       success: true,
       accountId: aliasAccountId.toString(),
-      transactionId: transferSubmit.transactionId.toString()
+      transactionId: transferSubmit.transactionId.toString(),
+      alreadyActivated: false
     };
   } catch (error) {
     console.error('Failed to activate Hedera account:', error);
