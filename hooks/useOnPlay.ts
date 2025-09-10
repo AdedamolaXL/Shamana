@@ -1,4 +1,3 @@
-import { on } from "events";
 import useAuthModal from "./useAuthModal";
 import usePlayer from "./usePlayer";
 import { useUser } from "./useUser";

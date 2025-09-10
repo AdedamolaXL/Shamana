@@ -1,4 +1,4 @@
-import { PrivateKey, PublicKey } from "@hashgraph/sdk";
+import { PrivateKey } from "@hashgraph/sdk";
 import crypto from 'crypto';
 
 // Encryption key (store securely in environment variables)

@@ -1,99 +1,79 @@
-// scripts/setup-identity-network.ts
+import {
+  initializeHederaClient,
+  logEnvStatus
+} from './hedera-utils';
 
-var fs = require('fs');
-var path = require('path');
-
-// Load environment variables manually from .env.local
-var envPath = path.resolve(__dirname, '../.env.local');
-if (fs.existsSync(envPath)) {
-  const envFile = fs.readFileSync(envPath, 'utf8');
-  envFile.split('\n').forEach((line: string) => { // Added type annotation here
-    const [key, ...value] = line.split('=');
-    if (key && value.length > 0) {
-      // Remove quotes if present
-      const cleanValue = value.join('=').trim().replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1');
-      process.env[key.trim()] = cleanValue;
-    }
-  });
-}
-
-console.log('Environment variables loaded from .env.local:');
-console.log('HEDERA_OPERATOR_ID:', process.env.HEDERA_OPERATOR_ID || 'Not set');
-console.log('HEDERA_OPERATOR_KEY:', process.env.HEDERA_OPERATOR_KEY ? 'Set' : 'Not set');
-
-var {
-  Client,
-  Hbar,
-  PrivateKey,
-  FileCreateTransaction,
+import {
   TopicCreateTransaction,
-  TopicId
-} = require("@hashgraph/sdk");
-
-function parsePriv(str: string) {
-  try {
-    return PrivateKey.fromStringDer(str);
-  } catch {
-    return PrivateKey.fromStringDer(str);
-  }
-}
+  FileCreateTransaction
+} from "@hashgraph/sdk";
 
 async function setupIdentityNetwork() {
-  console.log("Setting up Hedera Identity Network...");
-
-  if (!process.env.HEDERA_OPERATOR_ID || !process.env.HEDERA_OPERATOR_KEY) {
-    throw new Error('Hedera operator credentials are not set. Please check your .env.local file.');
-  }
-
-  // Initialize Hedera client
-  const client = Client.forTestnet();
-  const operatorId = process.env.HEDERA_OPERATOR_ID;
-  const operatorKey = parsePriv(process.env.HEDERA_OPERATOR_KEY);
+  let client;
   
-  client.setOperator(operatorId, operatorKey);
-  client.setDefaultMaxTransactionFee(new Hbar(10));
-
   try {
+    console.log("🚀 Setting up Hedera Identity Network...");
+    
+    const { client: hederaClient, operatorKey } = initializeHederaClient();
+    client = hederaClient;
+    
+    logEnvStatus();
+
     // Create DID and VC topics
     const didTopicTx = await new TopicCreateTransaction()
       .setTopicMemo("DID Topic for Music App")
-      .execute(client);
-    const didTopicReceipt = await didTopicTx.getReceipt(client);
+      .freezeWith(client);
+    const didTopicTxSign = await didTopicTx.sign(operatorKey);
+    const didTopicSubmit = await didTopicTxSign.execute(client);
+    const didTopicReceipt = await didTopicSubmit.getReceipt(client);
     const didTopicId = didTopicReceipt.topicId;
     
     const vcTopicTx = await new TopicCreateTransaction()
       .setTopicMemo("VC Topic for Music App")
-      .execute(client);
-    const vcTopicReceipt = await vcTopicTx.getReceipt(client);
+      .freezeWith(client);
+    const vcTopicTxSign = await vcTopicTx.sign(operatorKey);
+    const vcTopicSubmit = await vcTopicTxSign.execute(client);
+    const vcTopicReceipt = await vcTopicSubmit.getReceipt(client);
     const vcTopicId = vcTopicReceipt.topicId;
 
-    console.log(`Created DID Topic: ${didTopicId}`);
-    console.log(`Created VC Topic: ${vcTopicId}`);
+    console.log(`✅ Created DID Topic: ${didTopicId}`);
+    console.log(`✅ Created VC Topic: ${vcTopicId}`);
 
     // Create address book
     const addressBook = {
       appnetName: "Music Streaming App",
-      didTopicId: didTopicId.toString(),
-      vcTopicId: vcTopicId.toString(),
+      didTopicId: didTopicId!.toString(),
+      vcTopicId: vcTopicId!.toString(),
       appnetDidServers: [process.env.NEXTAUTH_URL || "http://localhost:3000"]
     };
 
     const addressBookFileTx = await new FileCreateTransaction()
       .setContents(JSON.stringify(addressBook))
-      .execute(client);
-    const addressBookFileReceipt = await addressBookFileTx.getReceipt(client);
+      .freezeWith(client);
+    const addressBookFileTxSign = await addressBookFileTx.sign(operatorKey);
+    const addressBookFileSubmit = await addressBookFileTxSign.execute(client);
+    const addressBookFileReceipt = await addressBookFileSubmit.getReceipt(client);
     const addressBookFileId = addressBookFileReceipt.fileId;
 
-    console.log(`Created Address Book: ${addressBookFileId}`);
+    console.log(`✅ Created Address Book: ${addressBookFileId}`);
 
     // Store these IDs in environment variables or database
-    console.log("\nAdd these to your environment variables:");
+    console.log("\n📋 Add these to your environment variables:");
     console.log(`HEDERA_DID_TOPIC_ID=${didTopicId}`);
     console.log(`HEDERA_VC_TOPIC_ID=${vcTopicId}`);
     console.log(`HEDERA_ADDRESS_BOOK_FILE_ID=${addressBookFileId}`);
 
   } catch (error) {
-    console.error("Failed to set up identity network:", error);
+    console.error("❌ Failed to set up identity network:", error);
+    process.exit(1);
+  } finally {
+    if (client) {
+      try {
+        await client.close();
+      } catch (e) {
+        console.error('Error closing Hedera client:', e);
+      }
+    }
   }
 }
 

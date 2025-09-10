@@ -1,4 +1,3 @@
-// app/api/did/create/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createUserDid } from '@/lib/hedera-did';
 

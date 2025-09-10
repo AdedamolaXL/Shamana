@@ -1,7 +1,5 @@
 import Image from "next/image"
-
 import getLikedSongs from "@/actions/getLikedSongs";
-import Header from "@/components/Header";
 import LikedContent from "./components/LikedContent";
 
 export const revalidate = 0;
@@ -11,7 +9,6 @@ const Liked = async () => {
     
     return (
         <div className="bg-neutral-900 rounded-lg w-full h-full overflow-hidden overflow-y-auto">
-            <Header>
                 <div className="mt-20">
                     <div className="flex flex-col md:flex-row items-center gap-x-5">
                         <div className="relative h-32 w-32 lg:h-44 lg:w-44">
@@ -28,7 +25,6 @@ const Liked = async () => {
                         </div>
                     </div>
                 </div>
-            </Header>
             <LikedContent songs={songs} />
         </div>
     );

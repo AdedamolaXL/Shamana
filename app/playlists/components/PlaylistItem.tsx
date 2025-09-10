@@ -1,6 +1,4 @@
-// components/PlaylistItem.tsx
 "use client"
-
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { FaMusic } from "react-icons/fa"

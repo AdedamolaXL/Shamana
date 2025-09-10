@@ -1,4 +1,3 @@
-// app/api/nft/mint/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import {
   Hbar,
@@ -9,8 +8,6 @@ import {
   TransferTransaction,
 } from "@hashgraph/sdk";
 import { uploadToIPFS } from '@/lib/ipfs';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
 import { activateHederaAccount } from '@/lib/hedera-account'; 
 
 // Flexible private key parser from your example

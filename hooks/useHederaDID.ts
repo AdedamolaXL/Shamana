@@ -1,6 +1,4 @@
-// hooks/useHederaDid.ts
 "use client"
-
 import { useState } from "react";
 
 export const useHederaDid = () => {

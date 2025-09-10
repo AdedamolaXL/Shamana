@@ -7,22 +7,16 @@ export const getPlaylists = async (): Promise<Playlist[]> => {
     cookies: cookies
   });
 
-  const { data: { session } } = await supabase.auth.getSession();
-
-  if (!session) {
-    return [];
-  }
-
+  // Get all playlists (not just user's own)
   const { data, error } = await supabase
     .from('playlists')
     .select('*')
-    .eq('user_id', session.user.id)
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.log(error.message);
+    console.log('Error fetching playlists:', error.message);
+    return [];
   }
 
   return (data as any) || [];
 };
-

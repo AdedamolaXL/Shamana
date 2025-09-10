@@ -1,4 +1,3 @@
-// middleware.ts (simplified)
 import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 import { NextResponse, NextRequest } from "next/server";
 

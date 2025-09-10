@@ -1,4 +1,3 @@
-// lib/server/hedera-did-server.ts
 import { createDID } from '@hiero-did-sdk/registrar';
 import { HederaClientConfiguration, HederaClientService } from '@hiero-did-sdk/client';
 import { HcsTopicService } from '@hiero-did-sdk/hcs';
@@ -66,20 +65,20 @@ export async function createUserDid(userId: string, userEmail: string) {
   }
 }
 
-export async function createHcsTopic(topicMemo: string) {
-  try {
-    const client = clientService.getClient('testnet');
-    const topicService = new HcsTopicService(client, { maxSize: 100 });
+// export async function createHcsTopic(topicMemo: string) {
+//   try {
+//     const client = clientService.getClient('testnet');
+//     const topicService = new HcsTopicService(client, { maxSize: 100 });
 
-    const topicId = await topicService.createTopic({
-      topicMemo,
-      waitForChangesVisibility: true,
-    });
+//     const topicId = await topicService.createTopic({
+//       topicMemo,
+//       waitForChangesVisibility: true,
+//     });
     
-    console.log('Created HCS topic:', topicId);
-    return topicId;
-  } catch (error) {
-    console.error('Error creating HCS topic:', error);
-    throw error;
-  }
-}
+//     console.log('Created HCS topic:', topicId);
+//     return topicId;
+//   } catch (error) {
+//     console.error('Error creating HCS topic:', error);
+//     throw error;
+//   }
+// }

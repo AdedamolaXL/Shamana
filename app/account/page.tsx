@@ -1,10 +1,9 @@
 import { redirect } from "next/navigation"
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
-
-import AccountContent from "@/components/AccountContent"
-import AccountHeader from "@/components/AccountHeader"
-import Box from "@/components/Box"
+import AccountContent from "./components/AccountContent"
+import AccountHeader from "./components/AccountHeader"
+import Box from "@/components/ui/Box"
 
 export const revalidate = 0;
 

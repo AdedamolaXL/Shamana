@@ -1,5 +1,4 @@
 import { getPlaylistById } from "@/actions/getPlaylistById";
-import Header from "@/components/Header";
 import Image from "next/image";
 import PlaylistContent from "../components/PlaylistContent";
 
@@ -15,7 +14,6 @@ const PlaylistPage = async ({ params }: PlaylistPageProps) => {
   
   return (
     <div className="bg-neutral-900 rounded-lg w-full h-full overflow-hidden overflow-y-auto">
-      <Header>
         <div className="mt-20">
           <div className="flex flex-col md:flex-row items-center gap-x-5">
             <div className="relative h-32 w-32 lg:h-44 lg:w-44">
@@ -39,7 +37,6 @@ const PlaylistPage = async ({ params }: PlaylistPageProps) => {
             </div>
           </div>
         </div>
-      </Header>
       <PlaylistContent songs={playlist.songs} />
     </div>
   );

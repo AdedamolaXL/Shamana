@@ -1,4 +1,3 @@
-// lib/ipfs.ts
 import pinataSDK from '@pinata/sdk';
 
 const pinata = new pinataSDK({ 

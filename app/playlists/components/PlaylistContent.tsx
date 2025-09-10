@@ -1,12 +1,10 @@
-// app/playlists/[id]/components/PlaylistContent.tsx
 "use client";
-
 import { useRouter } from "next/navigation"
 import { useEffect } from "react";
 import { Song } from "@/types"
 import { useUser } from "@/hooks/useUser";
-import MediaItem from "@/components/MediaItem";
-import LikeButton from "@/components/LikeButton"
+import MediaItem from "@/components/media/MediaItem";
+import LikeButton from "@/components/media/LikeButton"
 import useOnPlay from "@/hooks/useOnPlay";
 
 interface PlaylistContentProps {

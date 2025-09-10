@@ -8,17 +8,17 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --pretty --noEmit",
-    "create-token": "ts-node scripts/createPlaylistToken.ts",
+    "create-token": "ts-node scripts/create-playlist-token.ts",
     "setup-identity": "ts-node scripts/setup-identity-network.ts"
   },
   "dependencies": {
     "@hashgraph/did-sdk-js": "^0.1.1",
     "@hashgraph/sdk": "^2.72.0",
-     "@hiero-did-sdk/client": "^0.1.0",
-    "@hiero-did-sdk/registrar": "^0.1.0",
-    "@hiero-did-sdk/hcs": "^0.1.0",
-    "@hiero-did-sdk/resolver": "^0.1.0",
     "@hiero-did-sdk/anoncreds": "^0.1.0",
+    "@hiero-did-sdk/client": "^0.1.0",
+    "@hiero-did-sdk/hcs": "^0.1.0",
+    "@hiero-did-sdk/registrar": "^0.1.0",
+    "@hiero-did-sdk/resolver": "^0.1.0",
     "@pinata/sdk": "^2.1.0",
     "@radix-ui/react-dialog": "^1.0.4",
     "@radix-ui/react-slider": "^1.1.2",
@@ -52,7 +52,7 @@
   "devDependencies": {
     "@types/node": "^24.3.0",
     "@types/uniqid": "^5.3.2",
-    "supabase": "^1.75.1",
+    "supabase": "^1.226.4",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
   }

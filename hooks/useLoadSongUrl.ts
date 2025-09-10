@@ -6,13 +6,15 @@ const useLoadSongUrl = (song: Song) => {
 
     if (!song) return '';
 
+    // Handle case where song_path might be undefined
+    if (!song.song_path) return '';
+
     const { data: songData } = supabaseClient
         .storage
         .from('pli5t-songs')
         .getPublicUrl(song.song_path);
 
-    return songData.publicUrl;
-
+    return songData.publicUrl || '';
 }
 
-export default useLoadSongUrl;
+export default useLoadSongUrl
