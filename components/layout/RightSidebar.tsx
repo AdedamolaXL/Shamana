@@ -30,7 +30,7 @@ const RightSidebar = () => {
       {/* Right Sidebar Header with User Controls */}
       <div className="p-4 border-b border-neutral-800">
         <div className="flex items-center justify-between">
-          <h2 className="text-white font-semibold">Your Profile</h2>
+          
           {user ? (
             <div className="flex items-center gap-x-2">
               <button 
@@ -47,15 +47,15 @@ const RightSidebar = () => {
               </Button>
             </div>
           ) : (
-            <div className="flex gap-x-2">
+            <div className="flex gap-x-3">
               <Button 
-                className="bg-transparent text-neutral-300 font-medium text-sm px-2 py-1"
+                className="bg-transparent text-neutral-300 font-medium text-sm px- py-1"
                 onClick={authModal.onOpen}
               >
                 Sign Up
               </Button>
               <Button 
-                className="bg-white px-4 py-1 text-sm"
+                className="bg-white px-2 py-1 text-sm"
                 onClick={authModal.onOpen}
               >
                 Log In

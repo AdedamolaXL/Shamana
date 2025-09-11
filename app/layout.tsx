@@ -13,8 +13,8 @@ import Header from '@/components/layout/Header'
 const font = Figtree({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'Pli5t - Spotify Clone',
-  description: 'Play Music',
+  title: 'Shamana',
+  description: 'Listen to Music',
 }
 
 export const revalidate = 0;

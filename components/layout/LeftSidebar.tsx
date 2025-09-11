@@ -18,7 +18,7 @@ interface SidebarProps {
     songs: Song[]
 }
 
-const Sidebar:React.FC<SidebarProps> = ({songs}) => {
+const LeftSidebar:React.FC<SidebarProps> = ({songs}) => {
     const authModal = useAuthModal();
     const { user } = useUser();
     const uploadModal = useUploadModal();
@@ -83,4 +83,4 @@ const Sidebar:React.FC<SidebarProps> = ({songs}) => {
     );
 }
  
-export default Sidebar;
+export default LeftSidebar;

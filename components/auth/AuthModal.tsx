@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { Auth } from "@supabase/auth-ui-react"
 import { ThemeSupa } from "@supabase/auth-ui-shared"
 import { useEffect, useState } from "react";
-import { generateHederaKeys, encryptPrivateKey } from '@/lib/hedera-keys'
 import useAuthModal from "@/hooks/useAuthModal";
 import { Modal } from "../ui"
 import { useHederaDid } from '@/hooks/useHederaDID';
@@ -52,18 +51,29 @@ const AuthModal = () => {
 }, [session, isCreatingUser, createUserDid]);
 
     return (
-        <Modal title="Welcome to my project" description="Dont want to enter your info? dont worry, use krinsproject@gmail.com and aaaaaaaa" isOpen={isOpen} onChange={onChange}>
-            <Auth theme="dark" magicLink providers={["github"]} supabaseClient={supabaseClient}  appearance={{
-                theme: ThemeSupa,
-                variables: {
-                    default: {
-                        colors: {
-                            brand: "#404040",
-                            brandAccent: "#22c55e"
+        <Modal 
+            title="Welcome to Shamana" 
+            description="Sign in to your account to continue" 
+            isOpen={isOpen} 
+            onChange={onChange}
+        >
+            <Auth 
+                theme="dark" 
+                magicLink 
+                providers={["google"]} 
+                supabaseClient={supabaseClient}  
+                appearance={{
+                    theme: ThemeSupa,
+                    variables: {
+                        default: {
+                            colors: {
+                                brand: "#404040",
+                                brandAccent: "#22c55e"
+                            }
                         }
                     }
-                }
-            }}/> 
+                }}
+            /> 
         </Modal>
     );
 }
