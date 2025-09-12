@@ -2,6 +2,7 @@ import { getPlaylists } from "@/actions/getPlaylists";
 import getSongs from "@/actions/getSongs";
 import PlaylistItem from "../playlists/components/PlaylistItem";
 import TrendingSongs from "@/components/content/TrendingSongs";
+import PlaylistGameCard from "./components/PlaylistGameCard";
 import { twMerge } from 'tailwind-merge'
 
 export const revalidate = 0;
@@ -10,6 +11,43 @@ export default async function Home() {
   const allPlaylists = await getPlaylists();
   const allSongs = await getSongs();
   
+  // Playlist prompts for the "Playlist Games" section
+  const playlistPrompts = [
+    "New Wave",
+    "Soft Nights",
+    "4 d Kulture",
+    "Like Play",
+    "Quiet Strength",
+    "Friday Nights Glow",
+    "Electric",
+    "Future Love",
+    "Moon Moody",
+    "Ghana Sound",
+    "Love Ecstatic",
+    "Dance Floor",
+    "Soft Life",
+    "Faith",
+    "Afro Blues",
+    "On The Move",
+    "Unfinished Conversations",
+    "Creepin In Lagos",
+    "Flirtin",
+    "Hope",
+    "Sunday Lounge",
+    "Streeets",
+    "Pop Pop Pop",
+    "Spiritual",
+    "Yesterday's Confessions",
+    "Sweet Dreams",
+    "Healing",
+    "Candle Lights",
+    "Love Across Borders",
+    "Bittersweet",
+    "Crush n Meditate",
+    "Moon Rising",
+    "Pulse"
+  ];
+
   // Shuffle function to randomize arrays
   const shuffleArray = (array: any[]) => {
     const shuffled = [...array];
@@ -23,19 +61,46 @@ export default async function Home() {
   // Randomize playlists and songs
   const randomizedPlaylists = shuffleArray(allPlaylists);
   const randomizedSongs = shuffleArray(allSongs);
+  const randomizedPrompts = shuffleArray(playlistPrompts);
 
-  // Split playlists into three rows of 4
-  const row1 = randomizedPlaylists.slice(0, 4);
-  const row2 = randomizedPlaylists.slice(4, 8);
-  const row3 = randomizedPlaylists.slice(8, 12);
+  // Get 4 random prompts for Playlist Games
+  const playlistGamePrompts = randomizedPrompts.slice(0, 4);
+
+  // Check which prompts already have playlists
+  const activePlaylistGames = allPlaylists.filter(playlist => 
+    playlistGamePrompts.includes(playlist.name)
+  );
 
   // Get 4 random songs for Trending Songs
   const trendingSongs = randomizedSongs.slice(0, 4);
 
   const playlistRows = [
-    { title: "Featured Playlists", playlists: row1 },
-    { title: "Popular Now", playlists: row2 },
-    { title: "Recently Added", playlists: row3 }
+    { 
+      title: "Playlist Games", 
+      items: playlistGamePrompts.map(prompt => {
+        const matchingPlaylist = activePlaylistGames.find(p => p.name === prompt);
+        return {
+          type: "prompt" as const,
+          data: prompt,
+          isActive: !!matchingPlaylist,
+          playlistId: matchingPlaylist?.id
+        };
+      })
+    },
+    { 
+      title: "Popular Now", 
+      items: randomizedPlaylists.slice(0, 4).map(playlist => ({
+        type: "playlist" as const,
+        data: playlist
+      }))
+    },
+    { 
+      title: "Recently Added", 
+      items: randomizedPlaylists.slice(4, 8).map(playlist => ({
+        type: "playlist" as const,
+        data: playlist
+      }))
+    }
   ];
 
   return (
@@ -46,24 +111,48 @@ export default async function Home() {
           <TrendingSongs songs={trendingSongs} />
         )}
 
+        {/* Active Playlist Games Counter */}
+        {activePlaylistGames.length > 0 && (
+          <div className="flex items-center justify-between">
+            <h2 className="text-white text-2xl font-bold">Playlist Games</h2>
+            <div className="text-emerald-400 text-sm">
+              {activePlaylistGames.length} of 4 active
+            </div>
+          </div>
+        )}
+
         {/* Playlist Sections */}
         {playlistRows.map((row, index) => (
           <div key={index}>
-            <h2 className="text-white text-2xl font-bold mb-6">{row.title}</h2>
+            {row.title !== "Playlist Games" && (
+              <h2 className="text-white text-2xl font-bold mb-6">{row.title}</h2>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {row.playlists.map((playlist) => (
-                <PlaylistItem key={playlist.id} data={playlist} />
+              {row.items.map((item, itemIndex) => (
+                item.type === "prompt" ? (
+                  <PlaylistGameCard 
+                    key={itemIndex} 
+                    prompt={item.data} 
+                    isActive={item.isActive}
+                    playlistId={item.playlistId}
+                  />
+                ) : (
+                  <PlaylistItem key={item.data.id} data={item.data} />
+                )
               ))}
               
-              {/* Fill empty slots if less than 4 playlists */}
-              {Array.from({ length: 4 - row.playlists.length }).map((_, i) => (
-                <div key={`empty-${i}`} className="aspect-square bg-neutral-800 rounded-lg opacity-50" />
+              {/* Fill empty slots if less than 4 items */}
+              {Array.from({ length: 4 - row.items.length }).map((_, i) => (
+                <div 
+                  key={`empty-${i}`} 
+                  className="aspect-square bg-neutral-800 rounded-lg opacity-50" 
+                />
               ))}
             </div>
           </div>
         ))}
 
-        {/* Empty state */}
+        {/* Empty state for playlists */}
         {allPlaylists.length === 0 && (
           <div className="text-center py-12">
             <h2 className="text-white text-2xl font-bold mb-4">No Playlists Yet</h2>

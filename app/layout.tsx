@@ -35,9 +35,9 @@ export default async function RootLayout({
                         <ModalProvider />
                         <div className="grid grid-cols-[auto,1fr,auto] grid-rows-[auto,1fr,auto] h-screen bg-black">
                             {/* Left Sidebar */}
-                            <div className="col-start-1 row-span-2">
+                            {/* <div className="col-start-1 row-span-2">
                                 <Sidebar songs={userSongs} />
-                            </div>
+                            </div> */}
                             
                             {/* Header */}
                             <header className="col-start-2 row-start-1 z-10">
@@ -50,9 +50,9 @@ export default async function RootLayout({
                             </main>
                             
                             {/* Right Sidebar */}
-                            <div className="col-start-3 row-span-2">
+                            {/* <div className="col-start-3 row-span-2">
                                 <RightSidebar />
-                            </div>
+                            </div> */}
                             
                             {/* Player Footer */}
                             <footer className="col-span-3 row-start-3">

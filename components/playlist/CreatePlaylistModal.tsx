@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Add useEffect
 import { useRouter } from "next/navigation";
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
@@ -13,12 +13,14 @@ interface CreatePlaylistModalProps {
   isOpen: boolean;
   onChange: (open: boolean) => void;
   onPlaylistCreated?: (playlistId: string) => void;
+  defaultName?: string; // Add this prop
 }
 
 const CreatePlaylistModal: React.FC<CreatePlaylistModalProps> = ({
   isOpen,
   onChange,
-  onPlaylistCreated
+  onPlaylistCreated,
+  defaultName = "" // Add default value
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useUser();
@@ -28,6 +30,7 @@ const CreatePlaylistModal: React.FC<CreatePlaylistModalProps> = ({
     register,
     handleSubmit,
     reset,
+    setValue, // Add setValue
     formState: { errors }
   } = useForm<FieldValues>({
     defaultValues: {
@@ -35,6 +38,13 @@ const CreatePlaylistModal: React.FC<CreatePlaylistModalProps> = ({
       description: ""
     }
   });
+
+  // Add useEffect to set the default name when it changes
+  useEffect(() => {
+    if (defaultName) {
+      setValue("name", defaultName);
+    }
+  }, [defaultName, setValue]);
 
   const onSubmit: SubmitHandler<FieldValues> = async (values) => {
     try {
@@ -65,8 +75,9 @@ const CreatePlaylistModal: React.FC<CreatePlaylistModalProps> = ({
       onChange(false);
       
       if (onPlaylistCreated && data.id) {
-        onPlaylistCreated(data.id);
+       onPlaylistCreated(data.id); // This should trigger the redirect
       }
+
       
       router.refresh();
     } catch (error: any) {

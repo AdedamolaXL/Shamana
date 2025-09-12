@@ -2,7 +2,12 @@
 import { useRouter } from "next/navigation";
 import { twMerge } from "tailwind-merge";
 import { RxCaretLeft, RxCaretRight } from "react-icons/rx";
-import { SearchInput } from "../ui";
+import { FaUserAlt } from "react-icons/fa";
+import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import { toast } from "react-hot-toast";
+import { useUser } from "@/hooks/useUser";
+import useAuthModal from "@/hooks/useAuthModal";
+import { SearchInput, Button } from "../ui";
 
 interface HeaderProps {
     children?: React.ReactNode;
@@ -11,9 +16,23 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ children, className }) => {
     const router = useRouter();
+    const { user } = useUser();
+    const authModal = useAuthModal();
+    const supabaseClient = useSupabaseClient();
+
+    const handleLogout = async () => {
+        const { error } = await supabaseClient.auth.signOut();
+        router.refresh();
+
+        if (error) {
+            toast.error(error.message);
+        } else {
+            toast.success("Logged out successfully");
+        }
+    };
 
     return (
-        <div className={twMerge(`h-fit bg-gradient-to-b from-neutral-900 to-black p-6`, className)}>
+        <div className={twMerge(`h-fit bg-gradient-to-b from-neutral-900 to-black p-6 w-full`, className)}>
             <div className="w-full flex items-center justify-between">
                 {/* Navigation buttons */}
                 <div className="hidden md:flex gap-x-2 items-center">
@@ -32,12 +51,45 @@ const Header: React.FC<HeaderProps> = ({ children, className }) => {
                 </div>
 
                 {/* Search input - centered on mobile, right on desktop */}
-                <div className="flex-1 md:flex-none md:w-80 lg:w-96">
+                <div className="flex-1 md:flex-none md:w-80 lg:w-96 mx-4">
                     <SearchInput />
                 </div>
 
-                {/* Empty div to balance the layout */}
-                <div className="hidden md:flex md:w-[72px]"></div>
+                {/* User authentication buttons */}
+                <div className="flex items-center gap-x-2">
+                    {user ? (
+                        <>
+                            <button 
+                                onClick={() => router.push('/account')}
+                                className="rounded-full bg-white p-2 hover:opacity-75 transition"
+                                title="Account Settings"
+                            >
+                                <FaUserAlt className="text-black text-sm" />
+                            </button>
+                            <Button 
+                                className="bg-white px-4 py-1 text-sm"
+                                onClick={handleLogout}
+                            >
+                                Logout
+                            </Button>
+                        </>
+                    ) : (
+                        <>
+                            <Button 
+                                className="bg-transparent text-neutral-300 font-medium text-sm px-2 py-1"
+                                onClick={() => authModal.onOpen()}
+                            >
+                                Sign Up
+                            </Button>
+                            <Button 
+                                className="bg-white px-4 py-1 text-sm"
+                                onClick={() => authModal.onOpen()}
+                            >
+                                Log In
+                            </Button>
+                        </>
+                    )}
+                </div>
             </div>
             {children}
         </div>
