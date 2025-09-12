@@ -1,6 +1,4 @@
 import { getPlaylistById } from "@/actions/getPlaylistById";
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
 import PlaylistPageClient from "./PlaylistPageClient";
 
 interface PlaylistPageProps {
@@ -9,10 +7,10 @@ interface PlaylistPageProps {
   }
 }
 
-export default async function PlaylistPage({ params }: PlaylistPageProps) {
+const PlaylistPage = async ({ params }: PlaylistPageProps) => {
   const playlist = await getPlaylistById(params.id);
-  const supabase = createServerComponentClient({ cookies });
-  const { data: { session } } = await supabase.auth.getSession();
 
-  return <PlaylistPageClient playlist={playlist} session={session} />;
-}
+  return <PlaylistPageClient playlist={playlist} />;
+};
+
+export default PlaylistPage;

@@ -120,7 +120,7 @@ const CuratePageClient: React.FC<CuratePageClientProps> = ({ playlist, allSongs,
     <div className="bg-neutral-900 rounded-lg w-full h-full overflow-hidden overflow-y-auto">
       <div className="flex flex-col lg:flex-row p-6 gap-6">
         {/* Left column - Activity log (1/4 width) */}
-        <div className="w-full lg:w-1/4 bg-neutral-800 rounded-lg p-6 h-fit lg:sticky lg:top-24">
+        <div className="w-full lg:w-1/6 bg-neutral-800 rounded-lg p-6 h-fit lg:sticky lg:top-24">
           <h2 className="text-white text-xl font-semibold mb-6">Recent Activity</h2>
           <div className="space-y-4">
             {mockActivities.map((activity, index) => (
@@ -173,7 +173,7 @@ const CuratePageClient: React.FC<CuratePageClientProps> = ({ playlist, allSongs,
         </div>
         
         {/* Middle column - Playlist content (1/2 width) */}
-        <div className="w-full lg:w-1/2">
+        <div className="w-full lg:w-2/3">
           {/* Playlist header */}
           <div className="flex flex-col md:flex-row items-center gap-x-5 mb-6">
             <div className="relative h-32 w-32 lg:h-44 lg:w-44">
@@ -233,7 +233,7 @@ const CuratePageClient: React.FC<CuratePageClientProps> = ({ playlist, allSongs,
         </div>
         
         {/* Right column - Song library (1/4 width) */}
-        <div className="w-full lg:w-1/4 bg-neutral-800 rounded-lg p-6 h-fit lg:sticky lg:top-24">
+        <div className="w-full lg:w-1/6 bg-neutral-800 rounded-lg p-6 h-fit lg:sticky lg:top-24">
           <h2 className="text-white text-xl font-semibold mb-4">Song Library</h2>
           <div className="space-y-2 max-h-[calc(100vh-200px)] overflow-y-auto">
             {allSongs.map((song) => {

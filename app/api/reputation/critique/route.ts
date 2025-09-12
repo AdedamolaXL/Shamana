@@ -1,0 +1,48 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { reputationSystem } from '@/lib/reputation';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = createRouteHandlerClient({ cookies });
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { playlistId, comment, rating } = await request.json();
+
+    if (!playlistId || !comment) {
+      return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
+    }
+
+    // Get user's DID
+    const userDID = await reputationSystem.getUserDID(session.user.id);
+
+    const critiqueMessage = {
+      type: 'critique',
+      playlistId,
+      criticId: session.user.id,
+      criticDID: userDID,
+      comment,
+      rating: rating || null,
+      timestamp: Date.now(),
+    };
+
+    const transactionId = await reputationSystem.submitReputationMessage(critiqueMessage);
+
+    return NextResponse.json({ 
+      success: true, 
+      transactionId,
+      message: 'Critique submitted successfully' 
+    });
+  } catch (error) {
+    console.error('Error submitting critique:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to submit critique' },
+      { status: 500 }
+    );
+  }
+}
