@@ -28,6 +28,7 @@ const CuratePageClient: React.FC<CuratePageClientProps> = ({ playlist, allSongs,
   const [comment, setComment] = useState("");
   const [isAdding, setIsAdding] = useState<string | null>(null);
   const [currentPlaylist, setCurrentPlaylist] = useState(playlist);
+  const [addedSongs, setAddedSongs] = useState<string[]>([]); // Track newly added songs
   const onPlay = useOnPlay(allSongs);
   const router = useRouter();
 
@@ -53,69 +54,115 @@ const CuratePageClient: React.FC<CuratePageClientProps> = ({ playlist, allSongs,
   };
 
   const handleAddToPlaylist = async (songId: string) => {
-  if (!session) {
-    toast.error("Please sign in to add songs");
-    return;
-  }
-
-  const isAlreadyInPlaylist = currentPlaylist.songs.some(s => s.id === songId);
-  if (isAlreadyInPlaylist) {
-    toast.error("This song is already in the playlist");
-    return;
-  }
-
-  setIsAdding(songId);
-  
-  try {
-    const response = await fetch('/api/playlists/add', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        playlistId: currentPlaylist.id,
-        songId: songId
-      }),
-    });
-
-    const data = await response.json();
-    console.log('API Response:', { status: response.status, data });
-
-    if (!response.ok) {
-      throw new Error(data.error || `Failed to add song (${response.status})`);
+    if (!session) {
+      toast.error("Please sign in to add songs");
+      return;
     }
 
-    // Update the local state to reflect the new song
-    const addedSong = allSongs.find(song => song.id === songId);
-    if (addedSong) {
-      setCurrentPlaylist(prev => ({
-        ...prev,
-        songs: [...prev.songs, addedSong]
-      }));
-      
-      mockActivities.unshift({
-        user: "You",
-        action: "added",
-        song: addedSong.title || "a song",
-        time: "just now"
+    const isAlreadyInPlaylist = currentPlaylist.songs.some(s => s.id === songId);
+    if (isAlreadyInPlaylist) {
+      toast.error("This song is already in the playlist");
+      return;
+    }
+
+    setIsAdding(songId);
+    
+    try {
+      const response = await fetch('/api/playlists/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          playlistId: currentPlaylist.id,
+          songId: songId
+        }),
       });
+
+      const data = await response.json();
+      console.log('API Response:', { status: response.status, data });
+
+      if (!response.ok) {
+        throw new Error(data.error || `Failed to add song (${response.status})`);
+      }
+
+      // Update the local state to reflect the new song
+      const addedSong = allSongs.find(song => song.id === songId);
+      if (addedSong) {
+        setCurrentPlaylist(prev => ({
+          ...prev,
+          songs: [...prev.songs, addedSong]
+        }));
+        
+        // Track the newly added song for reward calculation
+        setAddedSongs(prev => [...prev, songId]);
+        
+        mockActivities.unshift({
+          user: "You",
+          action: "added",
+          song: addedSong.title || "a song",
+          time: "just now"
+        });
+      }
+
+      toast.success("Song added to playlist!");
+    } catch (error: any) {
+      console.error('Error adding song:', error);
+      toast.error(error.message || "Failed to add song to playlist");
+    } finally {
+      setIsAdding(null);
     }
-
-    toast.success("Song added to playlist!");
-  } catch (error: any) {
-    console.error('Error adding song:', error);
-    toast.error(error.message || "Failed to add song to playlist");
-  } finally {
-    setIsAdding(null);
-  }
-};
-
-
-  const handleSaveChanges = async () => {
-    // This could be used to save reordering or other changes
-    toast.success("Playlist updated successfully!");
   };
 
+ const handleSaveChanges = async () => {
+  if (!session) {
+    toast.error("Please sign in to save changes");
+    return;
+  }
+
+  try {
+    // Reward tokens based on the number of songs added
+    if (addedSongs.length > 0) {
+      try {
+        const rewardResponse = await fetch('/api/token/mint', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            amount: addedSongs.length, // Reward 1 token per song added
+            playlistId: currentPlaylist.id
+          }),
+        });
+
+        if (rewardResponse.ok) {
+          const rewardData = await rewardResponse.json();
+          toast.success(`Earned ${addedSongs.length} tokens for your contributions!`);
+          console.log('Tokens rewarded:', rewardData);
+        } else {
+          const errorData = await rewardResponse.json();
+          console.warn('Token reward failed (non-critical):', errorData);
+          // Don't show error to user - token rewards are secondary
+          toast.success("Playlist updated successfully! (Token rewards may take a moment to process)");
+        }
+      } catch (tokenError) {
+        console.warn('Token minting error (non-critical):', tokenError);
+        // Continue without failing the main operation
+        toast.success("Playlist updated successfully!");
+      }
+    } else {
+      toast.success("Playlist updated successfully!");
+    }
+
+    // Reset added songs tracking
+    setAddedSongs([]);
+    
+  } catch (error) {
+    console.error('Error saving changes:', error);
+    toast.error("Failed to save changes");
+  }
+ };
+  
   return (
     <div className="bg-neutral-900 rounded-lg w-full h-full overflow-hidden overflow-y-auto">
       <div className="flex flex-col lg:flex-row p-6 gap-6">
@@ -198,6 +245,12 @@ const CuratePageClient: React.FC<CuratePageClientProps> = ({ playlist, allSongs,
                 <span>{currentPlaylist.songs.length} songs</span>
                 <span>•</span>
                 <span>Community playlist</span>
+                {addedSongs.length > 0 && (
+                  <>
+                    <span>•</span>
+                    <span className="text-green-400">{addedSongs.length} new songs added</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -208,9 +261,10 @@ const CuratePageClient: React.FC<CuratePageClientProps> = ({ playlist, allSongs,
               <div className="flex gap-4 flex-wrap">
                 <button 
                   onClick={handleSaveChanges}
-                  className="bg-green-500 hover:bg-green-600 text-black font-medium py-2 px-4 rounded-md transition"
+                  disabled={addedSongs.length === 0}
+                  className="bg-green-500 hover:bg-green-600 text-black font-medium py-2 px-4 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Save Changes
+                  {addedSongs.length > 0 ? `Save Changes (${addedSongs.length} new songs)` : 'Save Changes'}
                 </button>
                 <button 
                   onClick={handleCritiqueClick}

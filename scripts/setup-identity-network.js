@@ -1,12 +1,12 @@
-import {
+const {
   initializeHederaClient,
-  logEnvStatus
-} from './hedera-utils';
+  logEnvStatus,
+} = require('./hedera-utils.js');
 
-import {
-  TopicCreateTransaction,
+const {
+    TopicCreateTransaction,
   FileCreateTransaction
-} from "@hashgraph/sdk";
+} = require("@hashgraph/sdk");
 
 async function setupIdentityNetwork() {
   let client;
@@ -36,14 +36,18 @@ async function setupIdentityNetwork() {
     const vcTopicReceipt = await vcTopicSubmit.getReceipt(client);
     const vcTopicId = vcTopicReceipt.topicId;
 
+    if (!didTopicId || !vcTopicId) {
+      throw new Error('Failed to create topics');
+    }
+
     console.log(`✅ Created DID Topic: ${didTopicId}`);
     console.log(`✅ Created VC Topic: ${vcTopicId}`);
 
     // Create address book
     const addressBook = {
       appnetName: "Music Streaming App",
-      didTopicId: didTopicId!.toString(),
-      vcTopicId: vcTopicId!.toString(),
+      didTopicId: didTopicId.toString(),
+      vcTopicId: vcTopicId.toString(),
       appnetDidServers: [process.env.NEXTAUTH_URL || "http://localhost:3000"]
     };
 
@@ -54,6 +58,10 @@ async function setupIdentityNetwork() {
     const addressBookFileSubmit = await addressBookFileTxSign.execute(client);
     const addressBookFileReceipt = await addressBookFileSubmit.getReceipt(client);
     const addressBookFileId = addressBookFileReceipt.fileId;
+
+    if (!addressBookFileId) {
+      throw new Error('Failed to create address book file');
+    }
 
     console.log(`✅ Created Address Book: ${addressBookFileId}`);
 

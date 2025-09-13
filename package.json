@@ -8,8 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --pretty --noEmit",
-    "create-token": "ts-node scripts/create-playlist-token.ts",
-    "setup-identity": "ts-node scripts/setup-identity-network.ts"
+    "create-token": "node scripts/create-playlist-token.js",
+    "setup-identity": "node scripts/setup-identity-network.js"
   },
   "dependencies": {
     "@hashgraph/did-sdk-js": "^0.1.1",

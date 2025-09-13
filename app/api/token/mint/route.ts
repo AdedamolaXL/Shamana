@@ -24,10 +24,10 @@ export async function POST(request: NextRequest) {
 
     // If playlistId is provided, verify the user has contributed to it
     if (playlistId) {
-      // Check for recent contributions by this user (within the last 5 minutes)
+      // First, let's check what columns exist in the playlist_songs table
       const { data: contributions, error: contributionError } = await supabase
         .from('playlist_songs')
-        .select('id, added_at')
+        .select('id, added_at') // Use added_at instead of created_at
         .eq('playlist_id', playlistId)
         .eq('user_id', session.user.id)
         .order('added_at', { ascending: false })
@@ -35,25 +35,51 @@ export async function POST(request: NextRequest) {
 
       if (contributionError) {
         console.error('Error checking contributions:', contributionError);
-        return NextResponse.json({ error: 'Failed to verify contributions' }, { status: 500 });
+        
+        // If added_at doesn't exist either, just check for any contributions without time filter
+        if (contributionError.code === '42703') { // column does not exist error
+          console.log('added_at column not found, checking for any contributions...');
+          
+          const { data: simpleContributions, error: simpleError } = await supabase
+            .from('playlist_songs')
+            .select('id')
+            .eq('playlist_id', playlistId)
+            .eq('user_id', session.user.id)
+            .limit(1);
+
+          if (simpleError) {
+            console.error('Error with simple contribution check:', simpleError);
+            return NextResponse.json({ error: 'Failed to verify contributions' }, { status: 500 });
+          }
+
+          if (!simpleContributions || simpleContributions.length === 0) {
+            console.log('No contributions found for user:', session.user.id);
+            return NextResponse.json({ 
+              error: 'No contributions found for this playlist. Please add songs and try again.' 
+            }, { status: 403 });
+          }
+          
+          // If we found contributions without time check, proceed with token minting
+          console.log('Contributions found (without time check), proceeding with token minting');
+        } else {
+          return NextResponse.json({ error: 'Failed to verify contributions' }, { status: 500 });
+        }
+      } else {
+        // If we have added_at column, check for recent contributions
+        const recentContributions = contributions?.filter(contribution => {
+          if (!contribution.added_at) return true; // If no timestamp, assume it's recent
+          const contributionTime = new Date(contribution.added_at).getTime();
+          const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+          return contributionTime > fiveMinutesAgo;
+        });
+
+        if (!recentContributions || recentContributions.length === 0) {
+          console.log('No recent contributions found for user:', session.user.id);
+          return NextResponse.json({ 
+            error: 'No recent contributions found for this playlist. Please add songs and try again.' 
+          }, { status: 403 });
+        }
       }
-
-      // Check for recent contributions (within the last 5 minutes)
-      const recentContributions = contributions?.filter(contribution => {
-        if (!contribution.added_at) return true; // If no timestamp, assume it's recent
-        const contributionTime = new Date(contribution.added_at).getTime();
-        const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
-        return contributionTime > fiveMinutesAgo;
-      });
-
-      if (!recentContributions || recentContributions.length === 0) {
-        console.log('No recent contributions found for user:', session.user.id);
-        return NextResponse.json({ 
-          error: 'No recent contributions found for this playlist. Please add songs and try again.' 
-        }, { status: 403 });
-      }
-
-      console.log(`Found ${recentContributions.length} recent contributions, allowing token minting`);
     }
 
     // Activate user's Hedera account if needed

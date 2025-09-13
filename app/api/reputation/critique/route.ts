@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { reputationSystem } from '@/lib/reputation';
+import { reputationSystem, ReputationCritique } from '@/lib/hedera-reputation';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 
@@ -21,13 +21,14 @@ export async function POST(request: NextRequest) {
     // Get user's DID
     const userDID = await reputationSystem.getUserDID(session.user.id);
 
-    const critiqueMessage = {
-      type: 'critique',
+    // Explicitly type the critique message to ensure proper type inference
+    const critiqueMessage: ReputationCritique = {
+      type: 'critique' as const, // Use 'as const' to ensure literal type
       playlistId,
       criticId: session.user.id,
       criticDID: userDID,
       comment,
-      rating: rating || null,
+      rating: rating || undefined,
       timestamp: Date.now(),
     };
 

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation"; // Add this import
 import { PlaylistWithSongs } from "@/types";
 import PlaylistContent from "../components/PlaylistContent";
 import { Button } from "@/components/ui";
@@ -24,6 +25,7 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist }) => 
   const [reputation, setReputation] = useState<ReputationData | null>(null);
   const [isSubmittingVote, setIsSubmittingVote] = useState(false);
   const [isSubmittingCritique, setIsSubmittingCritique] = useState(false);
+  const router = useRouter(); // Initialize router
 
   useEffect(() => {
     const fetchReputation = async () => {
@@ -45,81 +47,86 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist }) => 
     setIsCritiqueMode(true);
   };
 
+  const handleCollaborateClick = () => {
+    // Redirect to the curate page
+    router.push(`/playlists/${playlist.id}/curate`);
+  };
+
   const handleVote = async (voteType: 'upvote' | 'downvote') => {
-  setIsSubmittingVote(true);
-  try {
-    const response = await fetch('/api/reputation/vote', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        playlistId: playlist.id,
-        voteType,
-      }),
-    });
+    setIsSubmittingVote(true);
+    try {
+      const response = await fetch('/api/reputation/vote', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          playlistId: playlist.id,
+          voteType,
+        }),
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (response.ok) {
-      toast.success(`${data.message} (Transaction: ${data.transactionId})`);
-      
-      // Refetch reputation data
-      const repResponse = await fetch(`/api/reputation/playlist/${playlist.id}`);
-      if (repResponse.ok) {
-        const repData = await repResponse.json();
-        setReputation(repData.reputation);
+      if (response.ok) {
+        toast.success(`${data.message} (Transaction: ${data.transactionId})`);
+        
+        // Refetch reputation data
+        const repResponse = await fetch(`/api/reputation/playlist/${playlist.id}`);
+        if (repResponse.ok) {
+          const repData = await repResponse.json();
+          setReputation(repData.reputation);
+        }
+      } else {
+        toast.error(data.error || 'Failed to submit vote');
       }
-    } else {
-      toast.error(data.error || 'Failed to submit vote');
+    } catch (error) {
+      console.error('Error submitting vote:', error);
+      toast.error('Failed to submit vote');
+    } finally {
+      setIsSubmittingVote(false);
     }
-  } catch (error) {
-    console.error('Error submitting vote:', error);
-    toast.error('Failed to submit vote');
-  } finally {
-    setIsSubmittingVote(false);
-  }
-};
+  };
 
- const handleSubmitComment = async () => {
-  if (!comment.trim()) return;
-  
-  setIsSubmittingCritique(true);
-  try {
-    const response = await fetch('/api/reputation/critique', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        playlistId: playlist.id,
-        comment: comment.trim(),
-      }),
-    });
+  const handleSubmitComment = async () => {
+    if (!comment.trim()) return;
+    
+    setIsSubmittingCritique(true);
+    try {
+      const response = await fetch('/api/reputation/critique', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          playlistId: playlist.id,
+          comment: comment.trim(),
+        }),
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (response.ok) {
-      toast.success(`${data.message} (Transaction: ${data.transactionId})`);
-      setComment("");
-      setIsCritiqueMode(false);
-      
-      // Refetch reputation data
-      const repResponse = await fetch(`/api/reputation/playlist/${playlist.id}`);
-      if (repResponse.ok) {
-        const repData = await repResponse.json();
-        setReputation(repData.reputation);
+      if (response.ok) {
+        toast.success(`${data.message} (Transaction: ${data.transactionId})`);
+        setComment("");
+        setIsCritiqueMode(false);
+        
+        // Refetch reputation data
+        const repResponse = await fetch(`/api/reputation/playlist/${playlist.id}`);
+        if (repResponse.ok) {
+          const repData = await repResponse.json();
+          setReputation(repData.reputation);
+        }
+      } else {
+        toast.error(data.error || 'Failed to submit critique');
       }
-    } else {
-      toast.error(data.error || 'Failed to submit critique');
+    } catch (error) {
+      console.error('Error submitting critique:', error);
+      toast.error('Failed to submit critique');
+    } finally {
+      setIsSubmittingCritique(false);
     }
-  } catch (error) {
-    console.error('Error submitting critique:', error);
-    toast.error('Failed to submit critique');
-  } finally {
-    setIsSubmittingCritique(false);
-  }
-};
+  };
 
   return (
     <div className="bg-neutral-900 rounded-lg w-full h-full overflow-hidden overflow-y-auto">
@@ -253,7 +260,10 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist }) => 
               <div className="flex gap-3 mt-4">
                 {!isCritiqueMode ? (
                   <>
-                    <Button className="bg-blue-600 hover:bg-blue-700 px-6 py-2">
+                    <Button 
+                      onClick={handleCollaborateClick} // Add onClick handler
+                      className="bg-blue-600 hover:bg-blue-700 px-6 py-2"
+                    >
                       Collaborate
                     </Button>
                     <Button 

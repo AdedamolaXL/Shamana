@@ -1,13 +1,20 @@
-import { Client, AccountId, PrivateKey, Hbar } from "@hashgraph/sdk";
-import * as fs from 'fs';
-import * as path from 'path';
+const path = require('path');
+const fs = require('fs');
+const {
+  PrivateKey,
+  AccountId,
+  Client,
+  Hbar
+} = require("@hashgraph/sdk");
 
 // Load environment variables from .env.local
-export function loadEnvVariables(): void {
+function loadEnvVariables() {
+  // Use __dirname instead of import.meta.url for CommonJS
   const envPath = path.resolve(__dirname, '../.env.local');
+  
   if (fs.existsSync(envPath)) {
     const envFile = fs.readFileSync(envPath, 'utf8');
-    envFile.split('\n').forEach((line: string) => {
+    envFile.split('\n').forEach((line) => {
       const [key, ...value] = line.split('=');
       if (key && value.length > 0) {
         const cleanValue = value.join('=').trim().replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1');
@@ -18,8 +25,8 @@ export function loadEnvVariables(): void {
 }
 
 // Flexible private key parser
-export function parsePrivateKey(str: string): PrivateKey {
-   try {
+function parsePrivateKey(str) {
+  try {
     return PrivateKey.fromStringDer(str);
   } catch {
     return PrivateKey.fromStringDer(str);
@@ -27,7 +34,7 @@ export function parsePrivateKey(str: string): PrivateKey {
 }
 
 // Get operator account ID and key
-export function getOperator(): { operatorId: AccountId; operatorKey: PrivateKey } {
+function getOperator() {
   if (!process.env.HEDERA_OPERATOR_ID || !process.env.HEDERA_OPERATOR_KEY) {
     throw new Error('Hedera operator credentials are not set. Please check your .env.local file.');
   }
@@ -38,9 +45,8 @@ export function getOperator(): { operatorId: AccountId; operatorKey: PrivateKey 
   return { operatorId, operatorKey };
 }
 
-
 // Initialize Hedera client
-export function initializeHederaClient(): { client: Client; operatorId: AccountId; operatorKey: PrivateKey } {
+function initializeHederaClient() {
   loadEnvVariables();
   
   const { operatorId, operatorKey } = getOperator();
@@ -52,7 +58,7 @@ export function initializeHederaClient(): { client: Client; operatorId: AccountI
 }
 
 // Validate environment variables
-export function validateEnvVars(requiredVars: string[]): void {
+function validateEnvVars(requiredVars) {
   const missingVars = requiredVars.filter(varName => !process.env[varName]);
   
   if (missingVars.length > 0) {
@@ -61,7 +67,7 @@ export function validateEnvVars(requiredVars: string[]): void {
 }
 
 // Log environment variable status
-export function logEnvStatus(): void {
+function logEnvStatus() {
   console.log('Environment variables status:');
   console.log('HEDERA_OPERATOR_ID:', process.env.HEDERA_OPERATOR_ID || 'Not set');
   console.log('HEDERA_OPERATOR_KEY:', process.env.HEDERA_OPERATOR_KEY ? 'Set' : 'Not set');
@@ -69,3 +75,13 @@ export function logEnvStatus(): void {
   console.log('HEDERA_SUPPLY_KEY:', process.env.HEDERA_SUPPLY_KEY ? 'Set' : 'Not set');
   console.log('---');
 }
+
+// Export all functions
+module.exports = {
+  loadEnvVariables,
+  parsePrivateKey,
+  getOperator,
+  initializeHederaClient,
+  validateEnvVars,
+  logEnvStatus
+};

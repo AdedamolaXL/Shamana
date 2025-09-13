@@ -31,33 +31,35 @@ export async function POST(request: NextRequest) {
     const nextPosition = maxPositionData ? maxPositionData.position + 1 : 0;
 
     const { data: existingEntry, error: checkError } = await supabase
-  .from('playlist_songs')
-  .select('id')
-  .eq('playlist_id', playlistId)
-  .eq('song_id', songId)
-  .single();
+      .from('playlist_songs')
+      .select('id')
+      .eq('playlist_id', playlistId)
+      .eq('song_id', songId)
+      .single();
 
-if (existingEntry) {
-  return NextResponse.json(
-    { error: 'Song is already in the playlist' },
-    { status: 400 }
-  );
-}
+    if (existingEntry) {
+      return NextResponse.json(
+        { error: 'Song is already in the playlist' },
+        { status: 400 }
+      );
+    }
+    
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "not found" error
+      console.error('Check error:', checkError);
+      return NextResponse.json(
+        { error: 'Failed to check for duplicates' },
+        { status: 500 }
+      );
+    }
 
-if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "not found" error
-  console.error('Check error:', checkError);
-  return NextResponse.json(
-    { error: 'Failed to check for duplicates' },
-    { status: 500 }
-  );
-}
-
+    // Add the song to the playlist with user_id
     const { error } = await supabase
       .from('playlist_songs')
       .insert({
         playlist_id: playlistId,
         song_id: songId,
-        position: nextPosition
+        position: nextPosition,
+        user_id: session.user.id // Store the user who added the song
       });
 
     if (error) {

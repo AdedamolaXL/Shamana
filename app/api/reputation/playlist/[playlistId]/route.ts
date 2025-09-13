@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { reputationSystem } from '@/lib/reputation';
+import { reputationSystem } from '@/lib/hedera-reputation';
 
 interface Context {
   params: {

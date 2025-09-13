@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { reputationSystem } from '@/lib/reputation';
+import { reputationSystem } from '@/lib/hedera-reputation';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const userDID = await reputationSystem.getUserDID(session.user.id);
 
     const voteMessage = {
-      type: voteType,
+      type: voteType as 'upvote' | 'downvote',
       playlistId,
       voterId: session.user.id,
       voterDID: userDID,
