@@ -20,6 +20,24 @@ const clientService = new HederaClientService(hederaConfig);
 
 export async function createUserDid(userId: string, userEmail: string) {
   try {
+    const supabase = createServerComponentClient({ cookies });
+
+    // Double-check if DID already exists
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('hedera_did')
+      .eq('id', userId)
+      .single();
+
+    if (existingUser?.hedera_did) {
+      console.log('DID already exists for user:', userId);
+      return {
+        did: existingUser.hedera_did,
+        success: true,
+        alreadyExists: true
+      };
+    }
+
     // Generate Hedera keys
     const { privateKey, publicKey, evmAddress } = generateHederaKeys();
     const encryptedPrivateKey = encryptPrivateKey(privateKey);
@@ -36,7 +54,6 @@ export async function createUserDid(userId: string, userEmail: string) {
     console.log(`Created DID: ${did}`);
 
     // Store in database
-    const supabase = createServerComponentClient({ cookies });
     const { error } = await supabase
       .from('users')
       .update({
@@ -56,7 +73,9 @@ export async function createUserDid(userId: string, userEmail: string) {
       did,
       privateKey: encryptedPrivateKey,
       publicKey: publicKey.toStringDer(),
-      evmAddress
+      evmAddress,
+      success: true,
+      alreadyExists: false
     };
 
   } catch (error) {

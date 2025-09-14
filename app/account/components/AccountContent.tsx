@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSupabaseClient } from "@supabase/auth-helpers-react"
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form"
 import { toast } from "react-hot-toast"
@@ -12,29 +12,99 @@ import { useUser } from "@/hooks/useUser"
 const AccountContent = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+   const [username, setUsername] = useState<string>("")
   const supabaseClient = useSupabaseClient()
-  const { user, userDetails } = useUser()
+  const { user, userDetails, isLoading: userLoading, } = useUser()
   const router = useRouter()
+
+  
+
 
   const { register, handleSubmit, reset } = useForm<FieldValues>({
     defaultValues: {
       full_name: userDetails?.full_name || '',
-      email: user?.email || ''
+      email: user?.email || '',
+      username: userDetails?.username || ''
     }
   })
+
+    // Fetch username separately if userDetails is null
+  useEffect(() => {
+    const fetchUsername = async () => {
+      if (user && !userDetails) {
+        try {
+          const { data, error } = await supabaseClient
+            .from('users')
+            .select('username, full_name')
+            .eq('id', user.id)
+            .single()
+          
+          if (error) {
+            console.error('Error fetching user details:', error)
+            return
+          }
+          
+          if (data) {
+            setUsername(data.username || '')
+            // Reset form with fetched data
+            reset({
+              full_name: data.full_name || '',
+              email: user?.email || '',
+              username: data.username || ''
+            })
+          }
+        } catch (error) {
+          console.error('Failed to fetch username:', error)
+        }
+      } else if (userDetails) {
+        setUsername(userDetails.username || '')
+      }
+    }
+
+    fetchUsername()
+  }, [user, userDetails, supabaseClient, reset])
+
+  // Add debug logging
+  useEffect(() => {
+    console.log('User details:', userDetails)
+    console.log('User:', user)
+    console.log('Is user loading:', userLoading)
+  }, [userDetails, user, userLoading])
+
+
+  const refreshUserData = async () => {
+  try {
+    const { data: session } = await supabaseClient.auth.getSession()
+    if (session?.session) {
+      // This should trigger a refresh of the user context
+      await supabaseClient.auth.refreshSession()
+    }
+  } catch (error) {
+    console.error('Error refreshing session:', error)
+  }
+}
 
   const handleUpdate: SubmitHandler<FieldValues> = async (values) => {
     try {
       setIsLoading(true)
 
+      if (!values.username?.trim()) {
+        toast.error('Username cannot be empty')
+        return
+      }
+
       const { error } = await supabaseClient
         .from('users')
-        .update({ full_name: values.full_name })
+        .update({ 
+          full_name: values.full_name,
+          username: values.username.trim()
+        })
         .eq('id', user?.id)
 
       if (error) throw error
 
       toast.success('Profile updated!')
+      await refreshUserData()
       router.refresh()
     } catch (error) {
       toast.error('Something went wrong')
@@ -43,23 +113,57 @@ const AccountContent = () => {
     }
   }
 
-  const handleDelete = async () => {
-    try {
-      setIsLoading(true)
-      
-      const { error } = await supabaseClient.rpc('delete_user')
-      
-      if (error) throw error
-      
-      toast.success('Account deleted successfully')
-      router.push('/')
-    } catch (error) {
-      toast.error('Error deleting account')
-    } finally {
-      setIsLoading(false)
-      setIsDeleteModalOpen(false)
+  const refreshUserDetails = async () => {
+  if (!user?.id) return;
+  
+  try {
+    const { data, error } = await supabaseClient
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+    
+    if (error) {
+      console.error('Manual refresh failed:', error);
+      return;
     }
+    
+    if (data) {
+      // Update the form with the latest data
+      reset({
+        full_name: data.full_name || '',
+        email: user.email || '',
+        username: data.username || ''
+      });
+    }
+  } catch (error) {
+    console.error('Error in manual refresh:', error);
   }
+};
+
+// Call this on component mount
+useEffect(() => {
+  if (user && !userDetails) {
+    refreshUserDetails();
+  }
+}, [user, userDetails]);
+
+  // Show loading state while user data is being fetched
+  if (userLoading || (!userDetails && user)) {
+    return (
+      <div className="flex flex-col gap-y-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-neutral-700 rounded w-1/4 mb-4"></div>
+          <div className="space-y-4">
+            <div className="h-10 bg-neutral-700 rounded"></div>
+            <div className="h-10 bg-neutral-700 rounded"></div>
+            <div className="h-10 bg-neutral-700 rounded"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }    
+  
 
   return (
     <div className="flex flex-col gap-y-8">
@@ -74,6 +178,15 @@ const AccountContent = () => {
             disabled={true}
             label="Email"
             {...register('email', { required: true })}
+          />
+            <Input 
+            id="username"
+            disabled={true}
+            label="Username"
+             {...register('username', { 
+    required: true,
+    validate: (value) => value.trim().length > 0 || 'Username cannot be empty'
+  })}
           />
           <Input 
             id="full_name"
@@ -121,34 +234,7 @@ const AccountContent = () => {
         </div>
       </div>
 
-      <Modal
-        isOpen={isDeleteModalOpen}
-        onChange={(open) => !open && setIsDeleteModalOpen(false)}
-        title="Confirm Account Deletion"
-        description="This action cannot be undone. All your data will be permanently removed."
-      >
-        <div className="flex flex-col gap-y-4">
-          <p className="text-neutral-400 text-sm">
-            Are you sure you want to delete your account?
-          </p>
-          <div className="flex gap-x-4">
-            <Button 
-              onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
-              disabled={isLoading}
-            >
-              Yes, Delete
-            </Button>
-            <Button 
-              onClick={() => setIsDeleteModalOpen(false)}
-              className="bg-neutral-600 hover:bg-neutral-700"
-              disabled={isLoading}
-            >
-              Cancel
-            </Button>
-          </div>
-        </div>
-      </Modal>
+     
     </div>
   )
 }

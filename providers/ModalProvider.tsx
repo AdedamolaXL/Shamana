@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import AuthModal from "@/components/auth/AuthModal";
 import UploadModal from "@/components/media/UploadModal";

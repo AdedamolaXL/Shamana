@@ -5,6 +5,7 @@ interface InputProps
     extends React.InputHTMLAttributes<HTMLInputElement> {
     label?: string;
     description?: string;
+    error?: any;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(({
@@ -13,6 +14,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
     disabled,
     label,
     description,
+    error,
     id,
     ...props
 }, ref) => {
@@ -35,7 +37,10 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
                 disabled={disabled}
                 ref={ref}
                 {...props}
-            />
+             />
+             {error && (
+                <p className="text-red-500 text-xs mt-1">{error.message}</p>
+            )}
             {description && (
                 <p className="text-neutral-500 text-xs mt-1">
                     {description}

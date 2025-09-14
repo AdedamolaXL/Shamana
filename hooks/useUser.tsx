@@ -29,27 +29,57 @@ export const MyUserContextProvider = (props: Props) => {
     const [isLoadingData, setIsLoadingData] = useState(false);
     const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
     
-    const getUserDetails = () => supabase.from("users").select("*").single();
-    const getSubscription = () => supabase.from("subscriptions").select("*, prices(*, products(*))").in("status", ["trialing", "active"]).single();
+    const getUserDetails = async () => {
+        if (!user?.id) return { data: null, error: new Error('No user ID') };
+        
+        return await supabase
+            .from("users")
+            .select("*")
+            .eq("id", user.id)
+            .single();
+    };
+   
 
     useEffect(() => {
-        if (user && !isLoadingData && !userDetails ) {
-            setIsLoadingData(true);
-            
-            Promise.allSettled([getUserDetails(), getSubscription()]).then(
-                (results) => {
-                    const userDetailsPromise = results[0];
+        const fetchUserData = async () => {
+            if (user && !isLoadingData && !userDetails ) {
+                setIsLoadingData(true);
+                
+                try {
+                    const { data, error } = await getUserDetails();
                     
-                    if (userDetailsPromise.status === "fulfilled") {
-                        setUserDetails(userDetailsPromise.value.data as UserDetails);
+                    if (error) {
+                        console.error('Error fetching user details:', error);
+                        // Try one more time with a different approach
+                        try {
+                            const { data: retryData, error: retryError } = await supabase
+                                .from('users')
+                                .select('*')
+                                .eq('id', user.id)
+                                .maybeSingle();
+                            
+                            if (retryError) {
+                                console.error('Retry also failed:', retryError);
+                            } else if (retryData) {
+                                setUserDetails(retryData as UserDetails);
+                            }
+                        } catch (retryError) {
+                            console.error('Retry failed completely:', retryError);
+                        }
+                    } else {
+                        setUserDetails(data as UserDetails);
                     }
-
+                } catch (error) {
+                    console.error('Error in user data fetch:', error);
+                } finally {
                     setIsLoadingData(false);
                 }
-            )
-        } else if (!user && !isLoadingData && !isLoadingData) {
-            setUserDetails(null);
-        }
+            } else if (!user && !isLoadingData) {
+                setUserDetails(null);
+            }
+        };
+
+        fetchUserData();
     }, [user, isLoadingUser]);
 
     const value = {

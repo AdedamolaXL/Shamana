@@ -6,16 +6,14 @@ import { ThemeSupa } from "@supabase/auth-ui-shared"
 import { useEffect, useState } from "react";
 import useAuthModal from "@/hooks/useAuthModal";
 import { Modal } from "../ui"
-import { useHederaDid } from '@/hooks/useHederaDID';
 
 const AuthModal = () => {
     const supabaseClient = useSupabaseClient();
     const router = useRouter();
     const { session } = useSessionContext();
     const { onClose, isOpen } = useAuthModal();
-    const [isCreatingUser, setIsCreatingUser] = useState(false);
-    const { createUserDid } = useHederaDid();
-
+    const [isInitializing, setIsInitializing] = useState(false);
+    const [initializedUsers, setInitializedUsers] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         if (session) {
@@ -29,26 +27,90 @@ const AuthModal = () => {
     }
 
     useEffect(() => {
-  const createUserRecord = async () => {
-    if (session && session.user && session.user.id && !isCreatingUser) {
-      setIsCreatingUser(true);
-      try {
-        console.log('Creating user record for:', session.user.id);
-        
-        // Create DID via API
-        await createUserDid(session.user.id, session.user.email || '');
-        
-        console.log('User DID created successfully');
-      } catch (error) {
-        console.error('Error in user creation process:', error);
-      } finally {
-        setIsCreatingUser(false);
-      }
-    }
-  };
+        const initializeUser = async () => {
+            if (session && session.user && session.user.id && !isInitializing) {
+                // Check if we've already initialized this user
+                if (initializedUsers.has(session.user.id)) {
+                    console.log('User already initialized:', session.user.id);
+                    return;
+                }
 
-  createUserRecord();
-}, [session, isCreatingUser, createUserDid]);
+                setIsInitializing(true);
+                try {
+                    console.log('Initializing user:', session.user.id);
+                    
+                    // Check if user already has a DID and username
+                    const { data: existingUser, error: fetchError } = await supabaseClient
+                        .from('users')
+                        .select('hedera_did, username')
+                        .eq('id', session.user.id)
+                        .single();
+
+                    if (fetchError && fetchError.code !== 'PGRST116') {
+                        console.error('Error checking user:', fetchError);
+                    }
+
+                    // Only initialize if user doesn't have DID or username
+                    if (!existingUser?.hedera_did || !existingUser?.username) {
+                        // Initialize user (set username)
+                        const initResponse = await fetch('/api/user/init', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ userId: session.user.id }),
+                        });
+
+                        if (!initResponse.ok) {
+                            throw new Error('Failed to initialize user');
+                        }
+
+                        // Create DID (separate call)
+                        const didResponse = await fetch('/api/did/create', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ 
+                                userId: session.user.id, 
+                                userEmail: session.user.email || '' 
+                            }),
+                        });
+
+                        if (!didResponse.ok) {
+                            console.warn('DID creation failed:', await didResponse.text());
+                        } else {
+                            const didData = await didResponse.json();
+                            if (didData.alreadyExists) {
+                                console.log('DID already existed for user:', session.user.id);
+                            } else {
+                                console.log('DID created successfully for user:', session.user.id);
+                            }
+                        }
+                    } else {
+                        console.log('User already has DID and username:', session.user.id);
+                    }
+
+                    // Mark this user as initialized
+                    setInitializedUsers(prev => new Set(prev).add(session.user.id));
+                    
+                } catch (error) {
+                    console.error('Error in user initialization:', error);
+                } finally {
+                    setIsInitializing(false);
+                }
+            }
+        };
+
+        initializeUser();
+    }, [session, isInitializing, initializedUsers, supabaseClient]);
+
+    useEffect(() => {
+  return () => {
+    // Clear initialized users when component unmounts
+    setInitializedUsers(new Set());
+  };
+}, []);
 
     return (
         <Modal 
