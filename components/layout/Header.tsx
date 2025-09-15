@@ -2,11 +2,12 @@
 import { useRouter } from "next/navigation";
 import { twMerge } from "tailwind-merge";
 import { RxCaretLeft, RxCaretRight } from "react-icons/rx";
-import { FaUserAlt } from "react-icons/fa";
+import { FaUserAlt, FaUpload } from "react-icons/fa";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { toast } from "react-hot-toast";
 import { useUser } from "@/hooks/useUser";
 import useAuthModal from "@/hooks/useAuthModal";
+import useUploadModal from "@/hooks/useUploadModal";
 import { SearchInput, Button } from "../ui";
 
 interface HeaderProps {
@@ -18,6 +19,7 @@ const Header: React.FC<HeaderProps> = ({ children, className }) => {
     const router = useRouter();
     const { user } = useUser();
     const authModal = useAuthModal();
+    const uploadModal = useUploadModal();
     const supabaseClient = useSupabaseClient();
 
     const handleLogout = async () => {
@@ -29,6 +31,13 @@ const Header: React.FC<HeaderProps> = ({ children, className }) => {
         } else {
             toast.success("Logged out successfully");
         }
+    };
+
+    const handleUpload = () => {
+        if (!user) {
+            return authModal.onOpen();
+        }
+        return uploadModal.onOpen();
     };
 
     return (
@@ -56,7 +65,16 @@ const Header: React.FC<HeaderProps> = ({ children, className }) => {
                 </div>
 
                 {/* User authentication buttons */}
-                <div className="flex items-center gap-x-2">
+                <div className="flex items-center gap-x-3">
+                    {/* Upload Button */}
+                    <button
+                        onClick={handleUpload}
+                        className="rounded-full bg-white p-2 hover:opacity-75 transition"
+                        title="Upload Song"
+                    >
+                        <FaUpload className="text-black text-sm" />
+                    </button>
+
                     {user ? (
                         <>
                             <button 
