@@ -13,7 +13,7 @@ export async function uploadToIPFS(data: any) {
         name: `playlist-metadata-${Date.now()}`,
       },
       pinataOptions: {
-        cidVersion: 0
+        cidVersion: 0 as 0 | 1 // Explicitly type as 0 or 1
       }
     };
     

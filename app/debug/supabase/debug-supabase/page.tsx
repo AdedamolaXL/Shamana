@@ -2,6 +2,8 @@
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useEffect, useState } from "react";
 
+export const dynamic = 'force-dynamic';
+
 const DebugSupabase = () => {
   const supabase = useSupabaseClient();
   const [buckets, setBuckets] = useState<string[]>([]);

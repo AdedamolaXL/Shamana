@@ -75,7 +75,7 @@ const RightSidebar = () => {
           </div>
           <div className="text-neutral-400 text-sm">
             {user ? (
-              <p>Connect with friends to see what they're listening to</p>
+              <p>Connect with friends to see what they&apos;re listening to</p>
             ) : (
               <p>Sign in to see what your friends are playing</p>
             )}

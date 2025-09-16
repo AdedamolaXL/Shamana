@@ -5,6 +5,8 @@ import AccountContent from "./components/AccountContent"
 import AccountHeader from "./components/AccountHeader"
 import Box from "@/components/ui/Box"
 
+export const dynamic = 'force-dynamic';
+
 export const revalidate = 0;
 
 const AccountPage = async () => {

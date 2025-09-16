@@ -11,6 +11,8 @@ import {
 } from "@hashgraph/sdk";
 import { activateHederaAccount } from '@/lib/hedera-account';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = createRouteHandlerClient({ cookies });

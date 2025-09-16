@@ -113,40 +113,40 @@ const AccountContent = () => {
     }
   }
 
-  const refreshUserDetails = async () => {
-  if (!user?.id) return;
-  
-  try {
-    const { data, error } = await supabaseClient
-      .from('users')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-    
-    if (error) {
-      console.error('Manual refresh failed:', error);
-      return;
-    }
-    
-    if (data) {
-      // Update the form with the latest data
-      reset({
-        full_name: data.full_name || '',
-        email: user.email || '',
-        username: data.username || ''
-      });
-    }
-  } catch (error) {
-    console.error('Error in manual refresh:', error);
-  }
-};
+ useEffect(() => {
+    const refreshUserDetails = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { data, error } = await supabaseClient
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        if (error) {
+          console.error('Manual refresh failed:', error);
+          return;
+        }
+        
+        if (data) {
+          // Update the form with the latest data
+          reset({
+            full_name: data.full_name || '',
+            email: user.email || '',
+            username: data.username || ''
+          });
+        }
+      } catch (error) {
+        console.error('Error in manual refresh:', error);
+      }
+    };
 
-// Call this on component mount
-useEffect(() => {
-  if (user && !userDetails) {
-    refreshUserDetails();
-  }
-}, [user, userDetails]);
+    if (user && !userDetails) {
+      refreshUserDetails();
+    }
+ }, [user, userDetails, supabaseClient, reset]);
+  
 
   // Show loading state while user data is being fetched
   if (userLoading || (!userDetails && user)) {

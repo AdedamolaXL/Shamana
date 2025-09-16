@@ -2,6 +2,8 @@ import Image from "next/image"
 import getLikedSongs from "@/actions/getLikedSongs";
 import LikedContent from "./components/LikedContent";
 
+export const dynamic = 'force-dynamic';
+
 export const revalidate = 0;
 
 const Liked = async () => {

@@ -25,7 +25,25 @@ const nextConfig = {
         pathname: '/ipfs/**',
       },  
     ]
-  }
+  },
+   webpack: (config, { isServer }) => {
+    // Handle critical dependency warnings
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      net: false,
+      tls: false,
+      crypto: require.resolve('crypto-browserify'),
+      stream: require.resolve('stream-browserify'),
+      url: require.resolve('url'),
+      zlib: require.resolve('browserify-zlib'),
+      http: require.resolve('stream-http'),
+      https: require.resolve('https-browserify'),
+      path: require.resolve('path-browserify'),
+    };
+    
+    return config;
+  },
 };
 
 module.exports = nextConfig; 

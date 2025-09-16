@@ -7,6 +7,8 @@ interface SearchProps {
     }
 }
 
+export const dynamic = 'force-dynamic';
+
 export const revalidate = 0;
 
 const Search = async ({searchParams}: SearchProps) => {

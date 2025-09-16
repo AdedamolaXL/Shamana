@@ -1,6 +1,8 @@
 "use client";
 import DebugSupabase from "./debug-supabase/page";
 
+export const dynamic = 'force-dynamic';
+
 const DebugPage = () => {
   return (
     <div className="p-6 text-white">

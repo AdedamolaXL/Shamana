@@ -159,7 +159,7 @@ const HomeClient: React.FC<HomeClientProps> = ({
                         <p className="text-white">
                           <span className="font-semibold">{activity.user}</span>{" "}
                           <span className="text-neutral-400">{activity.action}:</span>{" "}
-                          <span className="text-green-400">"{activity.playlistName}"</span>
+                          <span className="text-green-400">{`"${activity.playlistName}"`}</span>
                         </p>
                         <p className="text-neutral-400 text-sm mt-1">
                           → {activity.details}

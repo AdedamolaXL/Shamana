@@ -7,6 +7,8 @@ interface PlaylistPageProps {
   }
 }
 
+export const dynamic = 'force-dynamic';
+
 const PlaylistPage = async ({ params }: PlaylistPageProps) => {
   const playlist = await getPlaylistById(params.id);
 

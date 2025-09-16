@@ -1,6 +1,8 @@
 import { getPlaylists } from "@/actions/getPlaylists";
 import PageContent from "./components/PageContent";
 
+export const dynamic = 'force-dynamic';
+
 export const revalidate = 0;
 
 const PlaylistsPage = async () => {

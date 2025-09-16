@@ -10,6 +10,8 @@ interface CuratePageProps {
   }
 }
 
+export const dynamic = 'force-dynamic';
+
 export default async function CuratePage({ params }: CuratePageProps) {
   const playlist = await getPlaylistById(params.id);
   const allSongs = await getSongs();

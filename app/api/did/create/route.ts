@@ -3,6 +3,8 @@ import { createUserDid } from '@/lib/hedera-did';
 import { cookies } from 'next/headers';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const { userId, userEmail } = await request.json();

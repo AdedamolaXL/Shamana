@@ -5,6 +5,7 @@ import { AiOutlinePlus } from "react-icons/ai";
 import { HiHome } from "react-icons/hi";
 import { BiSearch } from "react-icons/bi";
 import { RiPlayListFill } from "react-icons/ri";
+import { usePathname } from "next/navigation";
 
 import useAuthModal from "@/hooks/useAuthModal";
 import { useUser } from "@/hooks/useUser";
@@ -23,6 +24,7 @@ const LeftSidebar:React.FC<SidebarProps> = ({songs}) => {
     const { user } = useUser();
     const uploadModal = useUploadModal();
     const onPlay = useOnPlay(songs);
+    const pathname = usePathname();
 
     const onClick = () => {
         if (!user) {
@@ -36,16 +38,19 @@ const LeftSidebar:React.FC<SidebarProps> = ({songs}) => {
         icon: HiHome,
         label: 'Home', 
         href : '/',
+        active: pathname === '/'
       },
       {
         icon: BiSearch,
         label: 'Search',
         href: '/search',
+        active: pathname === '/search'
       },
       {
         icon: RiPlayListFill,
         label: 'Playlists',
         href: '/playlists',
+        active: pathname === '/playlists'
       }
     ]
 

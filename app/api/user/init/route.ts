@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 
+export const dynamic = 'force-dynamic';
+
 function generateRandomUsername(): string {
   const adjectives = ['Cool', 'Funky', 'Epic', 'Groovy', 'Smooth', 'Vibey', 'Chill', 'Mellow'];
   const nouns = ['Listener', 'Melody', 'Rhythm', 'Beat', 'Tune', 'Harmony', 'Note', 'Sound'];
