@@ -1,16 +1,16 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { Session } from "@supabase/auth-helpers-nextjs";
 import { Playlist, Song } from "@/types";
 import Header from "@/components/layout/Header";
-import { FaMusic, FaPlay, FaClock } from "react-icons/fa";
+import { FaMusic, FaPlay, FaClock, FaUsers, FaFire, FaSeedling, FaStar, FaPlus } from "react-icons/fa";
 import Link from "next/link";
 import { Button } from "@/components/ui";
 import { CreatePlaylistModal } from "@/components/playlist";
 import { MediaItem } from "@/components";
 import { useRouter } from "next/navigation";
 import useOnPlay from "@/hooks/useOnPlay";
+import CreateTribeModal from "@/components/tribe/CreateTribeModal";
 
 interface ActivityItem {
   type: "dream" | "spotlight" | "update";
@@ -20,14 +20,28 @@ interface ActivityItem {
   details: string;
   playlistId?: string;
   timestamp: string;
-  playlist?: Playlist;
+  playlist?: Playlist & { users?: { username: string, email: string } };
+}
+
+interface MusicTribe {
+  id: string;
+  name: string;
+  description: string;
+  memberCount: number;
+  playlistCount: number;
+  icon: React.ReactNode;
+  color: string;
+  isFeatured?: boolean;
+  category?: string;
+  created_at?: string;
 }
 
 interface HomeClientProps {
   session: Session | null;
-  initialPlaylists: Playlist[];
+  initialPlaylists: (Playlist & { users?: { username: string, email: string } })[];
   initialSongs: Song[];
 }
+
 
 const HomeClient: React.FC<HomeClientProps> = ({ 
   session, 
@@ -35,31 +49,217 @@ const HomeClient: React.FC<HomeClientProps> = ({
   initialSongs 
 }) => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCreateTribeModalOpen, setIsCreateTribeModalOpen] = useState(false);
   const [dreamInput, setDreamInput] = useState("");
-  const [playlists, setPlaylists] = useState<Playlist[]>(initialPlaylists);
+  const [playlists, setPlaylists] = useState<(Playlist & { users?: { username: string, email: string } })[]>(initialPlaylists);
   const [songs, setSongs] = useState<Song[]>(initialSongs);
   const [recentActivities, setRecentActivities] = useState<ActivityItem[]>([]);
+  const [musicTribes, setMusicTribes] = useState<MusicTribe[]>([]);
+  const [isLoadingTribes, setIsLoadingTribes] = useState(true);
   const router = useRouter();
   const onPlay = useOnPlay(songs);
 
-  // Transform playlists into activity items when they load
+  // Music Tribes data
+ const sampleTribes: MusicTribe[] = [
+    {
+      id: "afrobeat",
+      name: "Afrobeat Collective",
+      description: "Vibrant rhythms and infectious grooves from Africa",
+      memberCount: 1240,
+      playlistCount: 56,
+      icon: <FaFire className="text-orange-500" />,
+      color: "from-orange-500 to-red-500",
+      isFeatured: true
+    },
+    {
+      id: "indie",
+      name: "Indie Discovery",
+      description: "Fresh independent artists and hidden gems",
+      memberCount: 890,
+      playlistCount: 42,
+      icon: <FaSeedling className="text-green-500" />,
+      color: "from-green-500 to-emerald-500"
+    },
+    {
+      id: "electronic",
+      name: "Electronic Waves",
+      description: "EDM, synthwave, and electronic vibrations",
+      memberCount: 1560,
+      playlistCount: 78,
+      icon: <FaStar className="text-purple-500" />,
+      color: "from-purple-500 to-pink-500"
+    }
+ ];
+  
+    // Fetch tribes from API
   useEffect(() => {
-    setPlaylists(initialPlaylists);
-    setSongs(initialSongs);
-    
-    // Create activity items from playlists (most recent first)
-    const playlistActivities: ActivityItem[] = initialPlaylists
-      .slice(0, 5) // Show only the 5 most recent
-      .map((playlist, index) => ({
+    const fetchTribes = async () => {
+      try {
+        setIsLoadingTribes(true);
+        const response = await fetch('/api/tribes');
+        
+        if (response.ok) {
+          const realTribes = await response.json();
+          
+          // Format real tribes to match MusicTribe interface
+          const formattedTribes: MusicTribe[] = realTribes.map((tribe: any) => ({
+            id: tribe.id,
+            name: tribe.name,
+            description: tribe.description,
+            memberCount: tribe.memberCount,
+            playlistCount: 0, // You can fetch this separately if needed
+            icon: <FaMusic className={`text-${getColorFromCategory(tribe.category)}-500`} />,
+            color: getGradientFromCategory(tribe.category),
+            category: tribe.category,
+            created_at: tribe.created_at
+          }));
+
+          // Combine real tribes with sample tribes (or show only real tribes if they exist)
+          if (formattedTribes.length > 0) {
+            setMusicTribes(formattedTribes);
+          } else {
+            setMusicTribes(sampleTribes);
+          }
+        } else {
+          // Fallback to sample tribes if API fails
+          setMusicTribes(sampleTribes);
+        }
+      } catch (error) {
+        console.error('Error fetching tribes:', error);
+        setMusicTribes(sampleTribes);
+      } finally {
+        setIsLoadingTribes(false);
+      }
+    };
+
+    fetchTribes();
+  }, []);
+
+  // Helper functions for tribe styling
+  const getColorFromCategory = (category: string): string => {
+    const colorMap: { [key: string]: string } = {
+      'rock': 'red',
+      'pop': 'pink',
+      'jazz': 'yellow',
+      'hiphop': 'purple',
+      'electronic': 'blue',
+      'classical': 'indigo',
+      'country': 'orange',
+      'rnb': 'red',
+      'reggae': 'green',
+      'metal': 'gray',
+      'folk': 'brown',
+      'blues': 'blue',
+      'afrobeat': 'orange',
+      'indie': 'green'
+    };
+    return colorMap[category.toLowerCase()] || 'gray';
+  };
+
+  const getGradientFromCategory = (category: string): string => {
+    const gradientMap: { [key: string]: string } = {
+      'rock': 'from-red-500 to-orange-500',
+      'pop': 'from-pink-500 to-rose-500',
+      'jazz': 'from-yellow-500 to-amber-500',
+      'hiphop': 'from-purple-500 to-pink-500',
+      'electronic': 'from-blue-500 to-cyan-500',
+      'classical': 'from-indigo-500 to-purple-500',
+      'country': 'from-orange-500 to-yellow-500',
+      'rnb': 'from-red-500 to-pink-500',
+      'reggae': 'from-green-500 to-lime-500',
+      'metal': 'from-gray-500 to-slate-500',
+      'folk': 'from-amber-500 to-orange-500',
+      'blues': 'from-blue-500 to-indigo-500',
+      'afrobeat': 'from-orange-500 to-red-500',
+      'indie': 'from-green-500 to-emerald-500'
+    };
+    return gradientMap[category.toLowerCase()] || 'from-gray-500 to-slate-500';
+  };
+
+  // Refresh tribes after creating a new one
+  const handleTribeCreated = () => {
+    // Refresh the tribes list
+    const fetchTribes = async () => {
+      try {
+        const response = await fetch('/api/tribes');
+        if (response.ok) {
+          const realTribes = await response.json();
+          const formattedTribes: MusicTribe[] = realTribes.map((tribe: any) => ({
+            id: tribe.id,
+            name: tribe.name,
+            description: tribe.description,
+            memberCount: tribe.memberCount,
+            playlistCount: 0,
+            icon: <FaMusic className={`text-${getColorFromCategory(tribe.category)}-500`} />,
+            color: getGradientFromCategory(tribe.category),
+            category: tribe.category,
+            created_at: tribe.created_at
+          }));
+          setMusicTribes(formattedTribes);
+        }
+      } catch (error) {
+        console.error('Error refreshing tribes:', error);
+      }
+    };
+
+    fetchTribes();
+  };
+  
+  useEffect(() => {
+  setPlaylists(initialPlaylists);
+  setSongs(initialSongs);
+  
+  // Create activity items from playlists (most recent first)
+const playlistActivities: ActivityItem[] = initialPlaylists
+    .slice(0, 5)
+    .map((playlist, index) => {
+      // Get the username from the playlist user data - FIXED HERE
+      let username = "Anonymous";
+      if (playlist.users) {
+        username = playlist.users.username || 
+                  (playlist.users.email ? playlist.users.email.split('@')[0] : "Anonymous");
+      } else {
+        // Fallback: try to get user data from the joined users table
+        // This handles the case where the user data is in a different property
+        const playlistWithUser = playlist as any;
+        if (playlistWithUser.user) {
+          username = playlistWithUser.user.username || 
+                    (playlistWithUser.user.email ? playlistWithUser.user.email.split('@')[0] : "Anonymous");
+        }
+      }
+      
+      
+      // Calculate relative timestamp
+      let timestamp = "Just now";
+      if (playlist.created_at) {
+        const createdTime = new Date(playlist.created_at).getTime();
+        const now = Date.now();
+        const diffInHours = Math.floor((now - createdTime) / (1000 * 60 * 60));
+        
+        if (diffInHours === 0) {
+          const diffInMinutes = Math.floor((now - createdTime) / (1000 * 60));
+          timestamp = diffInMinutes <= 1 ? "Just now" : `${diffInMinutes} minutes ago`;
+        } else if (diffInHours < 24) {
+          timestamp = `${diffInHours} hours ago`;
+        } else {
+          const diffInDays = Math.floor(diffInHours / 24);
+          timestamp = `${diffInDays} days ago`;
+        }
+      } else {
+        timestamp = index === 0 ? "Just now" : `${index + 1} hours ago`;
+      }
+
+      return {
         type: "dream" as const,
-        user: session?.user?.email?.split('@')[0] || "Anonymous",
+        user: username,
         action: "dreamed",
         playlistName: playlist.name,
         details: "Be the first to add songs!",
         playlistId: playlist.id,
-        timestamp: index === 0 ? "Just now" : `${index + 1} hours ago`,
+        timestamp: timestamp,
         playlist: playlist
-      }));
+      };
+    });
 
     // Combine with some sample activities
     const sampleActivities: ActivityItem[] = [
@@ -100,6 +300,26 @@ const HomeClient: React.FC<HomeClientProps> = ({
 
   const handlePlaylistClick = (playlistId: string) => {
     router.push(`/playlists/${playlistId}`);
+  };
+
+
+    const handleJoinTribe = (tribeId: string) => {
+    if (!session) {
+      // Open auth modal if not logged in
+      // You might want to implement an auth modal hook here
+      return;
+    }
+    
+    // Logic to join a tribe
+    console.log(`Joining tribe: ${tribeId}`);
+    // You can implement API calls to track tribe membership here
+  };
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}k`;
+    }
+    return num.toString();
   };
 
   const formatDuration = (seconds: number = 0) => {
@@ -172,28 +392,34 @@ const HomeClient: React.FC<HomeClientProps> = ({
 
                     {/* Playlist Card (only for dream activities with playlist) */}
                     {activity.type === "dream" && activity.playlist && (
-                      <div 
-                        className="bg-neutral-700 rounded-lg p-4 cursor-pointer hover:bg-neutral-600 transition-colors"
-                        onClick={() => handlePlaylistClick(activity.playlistId!)}
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="w-16 h-16 bg-neutral-600 rounded-lg flex items-center justify-center">
-                            <FaMusic className="text-neutral-400 text-2xl" />
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="text-white font-semibold">{activity.playlist.name}</h3>
-                            {activity.playlist.description && (
-                              <p className="text-neutral-400 text-sm mt-1">
-                                {activity.playlist.description}
-                              </p>
-                            )}
-                            <p className="text-green-400 text-xs mt-2">
-                              Click to contribute songs
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+  <div 
+    className="bg-neutral-700 rounded-lg p-4 cursor-pointer hover:bg-neutral-600 transition-colors"
+    onClick={() => handlePlaylistClick(activity.playlistId!)}
+  >
+    <div className="flex items-center gap-4">
+      <div className="w-16 h-16 bg-neutral-600 rounded-lg flex items-center justify-center">
+        <FaMusic className="text-neutral-400 text-2xl" />
+      </div>
+      <div className="flex-1">
+        <h3 className="text-white font-semibold">{activity.playlist.name}</h3>
+        {activity.playlist.description && (
+          <p className="text-neutral-400 text-sm mt-1">
+            {activity.playlist.description}
+          </p>
+        )}
+        {/* Show who created the playlist */}
+        {activity.playlist.users && (
+          <p className="text-neutral-400 text-xs mt-1">
+            Created by: {activity.playlist.users.username || activity.playlist.users.email?.split('@')[0]}
+          </p>
+        )}
+        <p className="text-green-400 text-xs mt-2">
+          Click to contribute songs
+        </p>
+      </div>
+    </div>
+  </div>
+)}
 
                     {/* Action Button */}
                     <div className="mt-4">
@@ -225,82 +451,126 @@ const HomeClient: React.FC<HomeClientProps> = ({
             </div>
           </div>
 
-          {/* Queue Column - 1/4 width */}
+             {/* Right Column - Music Tribes (1/4 width) */}
           <div className="lg:col-span-1">
             <div className="bg-neutral-800 rounded-lg p-6 sticky top-24">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-white text-xl font-semibold flex items-center gap-2">
-                  <FaClock className="text-green-500" />
-                  Song Queue
+                  <FaUsers className="text-green-500" />
+                  Music Tribes
                 </h2>
                 <span className="text-neutral-400 text-sm">
-                  {songs.length} songs
+                  {musicTribes.length} communities
                 </span>
               </div>
 
-              <div className="space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto">
-                {songs.slice(0, 20).map((song, index) => (
-                  <div 
-                    key={song.id} 
-                    className="flex items-center gap-3 p-2 rounded-md hover:bg-neutral-700 transition-colors cursor-pointer group"
-                    onClick={() => onPlay(song.id)}
-                  >
-                    <div className="w-8 h-8 bg-neutral-600 rounded flex items-center justify-center flex-shrink-0">
-                      <span className="text-neutral-400 text-xs font-medium">
-                        {index + 1}
-                      </span>
+              {isLoadingTribes ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="p-4 bg-neutral-700 rounded-lg animate-pulse">
+                      <div className="h-4 bg-neutral-600 rounded mb-2"></div>
+                      <div className="h-3 bg-neutral-600 rounded w-3/4"></div>
                     </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm font-medium truncate">
-                        {song.title}
-                      </p>
-                      <p className="text-neutral-400 text-xs truncate">
-                        {song.author}
-                      </p>
-                    </div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+                    {musicTribes.map((tribe) => (
+                      <div 
+                        key={tribe.id}
+                        className={`p-4 rounded-lg cursor-pointer transition-all transform hover:scale-105 ${
+                          tribe.isFeatured 
+                            ? `bg-gradient-to-r ${tribe.color} border-2 border-white/20` 
+                            : 'bg-neutral-700 hover:bg-neutral-600'
+                        }`}
+                        onClick={() => router.push(`/tribes/${tribe.id}`)}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 bg-white/10 rounded-full">
+                            {tribe.icon}
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-white font-semibold text-sm mb-1">
+                              {tribe.name}
+                            </h3>
+                            <p className="text-neutral-300 text-xs mb-2">
+                              {tribe.description}
+                            </p>
+                            <div className="flex items-center justify-between text-xs text-neutral-400">
+                              <span>{formatNumber(tribe.memberCount)} members</span>
+                              <span>{formatNumber(tribe.playlistCount)} playlists</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-3 pt-3 border-t border-white/10">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleJoinTribe(tribe.id);
+                            }}
+                            className="w-full bg-white/10 hover:bg-white/20 text-white text-xs py-1 px-3 rounded-md transition-colors flex items-center justify-center gap-1"
+                          >
+                            <FaPlus size={10} />
+                            Join Tribe
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
 
-                    <div className="flex items-center gap-2">
-                      <span className="text-neutral-400 text-xs">
-                        {formatDuration()}
-                      </span>
-                      <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1">
-                        <FaPlay className="text-green-500 text-xs" />
-                      </button>
+                  {/* Create your own tribe CTA */}
+                  <div className="mt-6 pt-6 border-t border-neutral-700">
+                    <div className="text-center">
+                      <p className="text-neutral-400 text-sm mb-3">
+                        Don't see your tribe?
+                      </p>
+                      <Button 
+                        className="bg-green-600 hover:bg-green-700 text-sm w-full"
+                        onClick={() => setIsCreateTribeModalOpen(true)}
+                      >
+                        Start Your Own Tribe
+                      </Button>
                     </div>
                   </div>
-                ))}
-              </div>
 
-              {/* Empty state for queue */}
-              {songs.length === 0 && (
-                <div className="text-center py-8">
-                  <FaMusic className="text-neutral-400 text-2xl mx-auto mb-2" />
-                  <p className="text-neutral-400 text-sm">No songs available</p>
-                </div>
-              )}
-
-              {/* View all songs link */}
-              {songs.length > 20 && (
-                <div className="mt-4 pt-4 border-t border-neutral-700">
-                  <Link 
-                    href="/search" 
-                    className="text-green-400 hover:text-green-300 text-sm font-medium text-center block"
-                  >
-                    View All Songs →
-                  </Link>
-                </div>
+                  {/* Quick stats */}
+                  <div className="mt-6 pt-6 border-t border-neutral-700">
+                    <div className="grid grid-cols-2 gap-4 text-center">
+                      <div>
+                        <p className="text-white font-semibold text-lg">
+                          {formatNumber(musicTribes.reduce((sum, tribe) => sum + tribe.memberCount, 0))}
+                        </p>
+                        <p className="text-neutral-400 text-xs">Total Members</p>
+                      </div>
+                      <div>
+                        <p className="text-white font-semibold text-lg">
+                          {formatNumber(musicTribes.reduce((sum, tribe) => sum + tribe.playlistCount, 0))}
+                        </p>
+                        <p className="text-neutral-400 text-xs">Total Playlists</p>
+                      </div>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           </div>
         </div>
 
         <CreatePlaylistModal
-          isOpen={isCreateModalOpen}
-          onChange={setIsCreateModalOpen}
-          onPlaylistCreated={handlePlaylistCreated}
-          defaultName={dreamInput}
+  isOpen={isCreateModalOpen}
+  onChange={setIsCreateModalOpen}
+  onPlaylistCreated={handlePlaylistCreated}
+  defaultName={dreamInput}
+/>
+
+<CreateTribeModal
+          isOpen={isCreateTribeModalOpen}
+          onChange={setIsCreateTribeModalOpen}
+          onTribeCreated={handleTribeCreated}
         />
+
       </main>
     </div>
   );

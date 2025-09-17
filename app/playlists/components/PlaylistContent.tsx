@@ -25,15 +25,18 @@ const PlaylistContent: React.FC<PlaylistContentProps> = ({songs}) => {
     if (songs.length === 0) {
         return (
             <div className="flex flex-col gap-y-2 w-full px-6 text-neutral-400">
-                This playlist is empty
+                <p className="text-center py-8">This playlist is empty</p>
+                <p className="text-center text-sm">
+                    Be the first to add songs by clicking the Collaborate button!
+                </p>
             </div>
         )
     }
 
     return (
-        <div className="flex flex-col gap-y-2 w-full p-6">
+        <div className="flex flex-col gap-y-2 w-full">
             {songs.map((song) => (
-                <div key={song.id} className="flex items-center gap-x-4 w-full">
+                <div key={song.id} className="flex items-center gap-x-4 w-full p-3 hover:bg-neutral-700/50 rounded-md">
                     <div className="flex-1">
                         <MediaItem
                             onClick={(id: string) => {onPlay(id)}}
