@@ -44,50 +44,73 @@ Before running this application, ensure you have:
 
 ### 1. Clone the repository
 
-git clone <repository-url>
+```bash
+git clone https://github.com/AdedamolaXL/Shamana.git
 cd shamana
+```
 
 ### 2. Install dependencies
 
+```bash
 npm install
+```
 
 ### 3. Environment Variables
 Create a .env.local file in the root directory with the following variables:
 
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+Supabase
+> NEXT_PUBLIC_SUPABASE_URL=
 
-# Hedera
-HEDERA_OPERATOR_ID=your_hedera_operator_id
-HEDERA_OPERATOR_KEY=your_hedera_operator_private_key
-HEDERA_NFT_TOKEN_ID=your_hedera_nft_token_id
-HEDERA_FT_TOKEN_ID=your_hedera_ft_token_id
-HEDERA_NFT_SUPPLY_KEY=your_hedera_nft_supply_key
-HEDERA_DID_TOPIC_ID=your_hedera_did_topic_id
-HEDERA_VC_TOPIC_ID=your_hedera_vc_topic_id
-HEDERA_ADDRESS_BOOK_FILE_ID=your_hedera_address_book_file_id
+> NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
-# Pinata (IPFS)
-PINATA_JWT=your_pinata_jwt
-NEXT_PUBLIC_PINATA_GATEWAY_URL=https://gateway.pinata.cloud
+Pinata
+> PINATA_JWT=
 
-# Encryption key for private keys (change this in production)
-ENCRYPTION_KEY=your_encryption_key
+>NEXT_PUBLIC_GATEWAY_URL=
 
-# Next Auth (optional)
-NEXTAUTH_SECRET=your_nextauth_secret
-NEXTAUTH_URL=http://localhost:3000
+Hedera
+> HEDERA_OPERATOR_ID=
+
+> HEDERA_OPERATOR_KEY=
+
+> HEDERA_NFT_TOKEN_ID=
+
+> HEDERA_FT_TOKEN_ID=
+
+> HEDERA_SUPPLY_KEY=
+
+> HEDERA_NETWORK=
+
+> HEDERA_DID_TOPIC_ID=
+
+> HEDERA_VC_TOPIC_ID=
+
+> HEDERA_ADDRESS_BOOK_FILE_ID=
+
+NextAuth
+
+> NEXTAUTH_URL=
+
+Encryption Key
+
+> ENCRYPTION_KEY=
 
 ### 4. Hedera Setup
 Run the provided scripts to set up the Hedera tokens and identity network:
 
 # Create the NFT and FT tokens
+```bash
 npm run create-token
+```
+
 
 # Set up the identity network (HCS topics for DIDs and VCs)
+```bash
 npm run setup-identity
+```
+
 
 ### 5. Run the Application
-
+```bash
 npm run dev
+```
