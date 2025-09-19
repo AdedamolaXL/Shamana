@@ -66,7 +66,7 @@ Supabase
 Pinata
 > PINATA_JWT=
 
->NEXT_PUBLIC_GATEWAY_URL=
+> NEXT_PUBLIC_GATEWAY_URL=
 
 Hedera
 > HEDERA_OPERATOR_ID=
@@ -98,19 +98,19 @@ Encryption Key
 ### 4. Hedera Setup
 Run the provided scripts to set up the Hedera tokens and identity network:
 
-# Create the NFT and FT tokens
+#### Create the NFT and FT tokens
 ```bash
 npm run create-token
 ```
 
 
-# Set up the identity network (HCS topics for DIDs and VCs)
+#### Set up the identity network (HCS topics for DIDs and VCs)
 ```bash
 npm run setup-identity
 ```
 
 
-### 5. Run the Application
+#### 5. Run the Application
 ```bash
 npm run dev
 ```
