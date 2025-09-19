@@ -201,7 +201,7 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
             </h3>
             <p className="text-neutral-400 text-sm mb-6">
               Select songs from the library to add to this community playlist. 
-              You'll earn tokens for your contributions!
+              You&apos;ll earn tokens for your contributions!
             </p>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
@@ -263,7 +263,7 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
             <div>
               <h4 className="text-white font-medium mb-2">How it works</h4>
               <ul className="text-neutral-400 text-sm space-y-2">
-                <li>• Click "Add Songs" to contribute to this playlist</li>
+                <li>• Click &apos;Add Songs&apos; to contribute to this playlist</li>
                 <li>• Help build the perfect music collection</li>
                 <li>• Discover new music from other contributors</li>
                 <li>• Earn tokens for your contributions</li>

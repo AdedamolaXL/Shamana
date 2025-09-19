@@ -8,6 +8,8 @@ interface Context {
   };
 }
 
+export const dynamic = 'force-dynamic'; 
+
 export async function GET(request: NextRequest, context: Context) {
   try {
     const supabase = createRouteHandlerClient({ cookies });

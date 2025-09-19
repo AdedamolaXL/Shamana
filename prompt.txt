@@ -1,7 +1,0 @@
-provide nextjs frontend code in a single file for Shamana Homepage. do not indent spaces in code. do not separate code just yet. use work sans google font. use font awesome for icons. black body background.
-
-header comprise logo (https://res.cloudinary.com/dqhawdcol/image/upload/v1758201861/y3p2lwz2oq5gwny6ktyu.svg), page navigations (Home(currently active), Trybe, Library), search bar, upload button (icon and upload text), user account button (https://res.cloudinary.com/dqhawdcol/image/upload/v1758202400/e9ifs1tewfgemgxfc5kc.jpg + dropdown icon). on mobile, hide page navigations and search bar.
-
-on mobile, there's a footer navigation which comprise icon + text for Home, Trybe, Library, Search. hide this on large devices.
-
-there's also a player bar at the bottom of all devices (for mobile, it is above the footer), blurred frosted glass background effect. comprise button controls for music

@@ -42,23 +42,6 @@ interface HomeClientProps {
   initialSongs: Song[];
 }
 
-
-const HomeClient: React.FC<HomeClientProps> = ({ 
-  session, 
-  initialPlaylists, 
-  initialSongs 
-}) => {
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isCreateTribeModalOpen, setIsCreateTribeModalOpen] = useState(false);
-  const [dreamInput, setDreamInput] = useState("");
-  const [playlists, setPlaylists] = useState<(Playlist & { users?: { username: string, email: string } })[]>(initialPlaylists);
-  const [songs, setSongs] = useState<Song[]>(initialSongs);
-  const [recentActivities, setRecentActivities] = useState<ActivityItem[]>([]);
-  const [musicTribes, setMusicTribes] = useState<MusicTribe[]>([]);
-  const [isLoadingTribes, setIsLoadingTribes] = useState(true);
-  const router = useRouter();
-  const onPlay = useOnPlay(songs);
-
   // Music Tribes data
  const sampleTribes: MusicTribe[] = [
     {
@@ -90,6 +73,24 @@ const HomeClient: React.FC<HomeClientProps> = ({
       color: "from-purple-500 to-pink-500"
     }
  ];
+
+const HomeClient: React.FC<HomeClientProps> = ({ 
+  session, 
+  initialPlaylists, 
+  initialSongs 
+}) => {
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCreateTribeModalOpen, setIsCreateTribeModalOpen] = useState(false);
+  const [dreamInput, setDreamInput] = useState("");
+  const [playlists, setPlaylists] = useState<(Playlist & { users?: { username: string, email: string } })[]>(initialPlaylists);
+  const [songs, setSongs] = useState<Song[]>(initialSongs);
+  const [recentActivities, setRecentActivities] = useState<ActivityItem[]>([]);
+  const [musicTribes, setMusicTribes] = useState<MusicTribe[]>([]);
+  const [isLoadingTribes, setIsLoadingTribes] = useState(true);
+  const router = useRouter();
+  const onPlay = useOnPlay(songs);
+
+
   
     // Fetch tribes from API
   useEffect(() => {
@@ -523,9 +524,7 @@ const playlistActivities: ActivityItem[] = initialPlaylists
                   {/* Create your own tribe CTA */}
                   <div className="mt-6 pt-6 border-t border-neutral-700">
                     <div className="text-center">
-                      <p className="text-neutral-400 text-sm mb-3">
-                        Don't see your tribe?
-                      </p>
+                     <p className="text-neutral-400">Don&apos;t see your tribe?</p>
                       <Button 
                         className="bg-green-600 hover:bg-green-700 text-sm w-full"
                         onClick={() => setIsCreateTribeModalOpen(true)}
