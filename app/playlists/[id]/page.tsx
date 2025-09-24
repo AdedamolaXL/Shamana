@@ -1,6 +1,6 @@
 import { getPlaylistById } from "@/actions/getPlaylistById";
 import getSongs from "@/actions/getSongs";
-import PlaylistPageClient from "../components/PlaylistPageClient";
+import PlaylistPageClient from "./components/PlaylistPageClient";
 
 interface PlaylistPageProps {
   params: {
