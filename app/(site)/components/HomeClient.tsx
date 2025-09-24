@@ -1,7 +1,7 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, SetStateAction } from "react";
 import { Session } from "@supabase/auth-helpers-nextjs";
-import { Playlist, Song } from "@/types";
+import { Playlist, Song, PlaylistWithSongs } from "@/types";
 import { FaMusic, FaPlay, FaClock, FaUsers, FaFire, FaSeedling, FaStar, FaPlus } from "react-icons/fa";
 import Link from "next/link";
 import { Button } from "@/components/ui";
@@ -19,7 +19,8 @@ interface ActivityItem {
   details: string;
   playlistId?: string;
   timestamp: string;
-  playlist?: Playlist & { users?: { username: string, email: string } };
+  playlist?: PlaylistWithSongs;
+  songs?: string[];
 }
 
 interface MusicTribe {
@@ -37,7 +38,7 @@ interface MusicTribe {
 
 interface HomeClientProps {
   session: Session | null;
-  initialPlaylists: (Playlist & { users?: { username: string, email: string } })[];
+  initialPlaylists: PlaylistWithSongs[];
   initialSongs: Song[];
 }
 
@@ -189,14 +190,14 @@ const HomeClient: React.FC<HomeClientProps> = ({
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isCreateTribeModalOpen, setIsCreateTribeModalOpen] = useState(false);
   const [dreamInput, setDreamInput] = useState("");
-  const [playlists, setPlaylists] = useState<(Playlist & { users?: { username: string, email: string } })[]>(initialPlaylists);
+  const [playlists, setPlaylists] = useState<PlaylistWithSongs[]>(initialPlaylists);
   const [songs, setSongs] = useState<Song[]>(initialSongs);
   const [recentActivities, setRecentActivities] = useState<ActivityItem[]>([]);
   const [musicTribes, setMusicTribes] = useState<MusicTribe[]>([]);
   const [isLoadingTribes, setIsLoadingTribes] = useState(true);
   const router = useRouter();
   const onPlay = useOnPlay(songs);
-  const autoPlayRef = useRef(null);
+  const autoPlayRef = useRef<NodeJS.Timeout | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [error, setError] = useState(null);
 
@@ -221,7 +222,7 @@ const HomeClient: React.FC<HomeClientProps> = ({
     }, 5000);
   };
 
-  const showSlide = (index) => {
+  const showSlide = (index: SetStateAction<number>) => {
     setCurrentSlide(index);
     startAutoPlay();
   };
@@ -361,9 +362,9 @@ const playlistActivities: ActivityItem[] = initialPlaylists
     .map((playlist, index) => {
       // Get the username from the playlist user data - FIXED HERE
       let username = "Anonymous";
-      if (playlist.users) {
-        username = playlist.users.username || 
-                  (playlist.users.email ? playlist.users.email.split('@')[0] : "Anonymous");
+      if (playlist.user) {
+        username = playlist.user.username || 
+                  (playlist.user.email ? playlist.user.email.split('@')[0] : "Anonymous");
       } else {
         // Fallback: try to get user data from the joined users table
         // This handles the case where the user data is in a different property
@@ -373,6 +374,11 @@ const playlistActivities: ActivityItem[] = initialPlaylists
                     (playlistWithUser.user.email ? playlistWithUser.user.email.split('@')[0] : "Anonymous");
         }
       }
+
+       // Extract songs from playlist
+    const playlistSongs = (playlist.playlist_songs || [])
+      .sort((a, b) => a.position - b.position)
+      .map((ps: any) => `${ps.songs.title} - ${ps.songs.author}`);
       
       
       // Calculate relative timestamp
@@ -400,10 +406,10 @@ const playlistActivities: ActivityItem[] = initialPlaylists
         user: username,
         action: "dreamed",
         playlistName: playlist.name,
-        details: "Be the first to add songs!",
-        playlistId: playlist.id,
-        timestamp: timestamp,
-        playlist: playlist
+        details: playlistSongs.length > 0 ? "" : "Be the first to add songs!",
+        timestamp: playlist.created_at ? new Date(playlist.created_at).toLocaleString() : "Just now",
+        playlist: playlist,
+        songs: playlistSongs
       };
     });
 
@@ -609,14 +615,14 @@ const playlistActivities: ActivityItem[] = initialPlaylists
         </div>
 
         {/* Song List */}
-        {/* <div className="flex flex-col gap-1.5 mb-4">
-          {activity.songs.map((song, index) => (
-            <div key={index} className="flex items-center gap-2.5 text-sm text-gray-300">
-              <span className="text-[#6a11cb] font-medium w-5">{index + 1}</span>
-              <span>{song}</span>
-            </div>
-          ))}
-        </div> */}
+        <div className="flex flex-col gap-1.5 mb-4">
+          {activity.songs?.map((song: string, index: number) => (
+          <div key={index} className="flex items-center gap-2.5 text-sm text-gray-300">
+          <span className="text-[#6a11cb] font-medium w-5">{index + 1}</span>
+          <span>{song}</span>
+        </div>
+        ))}
+        </div>
 
         {/* Comments */}
         {/* <div className="flex gap-2.5 items-start">

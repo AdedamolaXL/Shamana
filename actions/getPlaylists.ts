@@ -1,8 +1,8 @@
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
-import { Playlist } from "@/types";
+import { PlaylistWithSongs } from "@/types";
 
-export const getPlaylists = async (): Promise<(Playlist & { user?: { username: string, email: string } })[]> => {
+export const getPlaylists = async (): Promise<PlaylistWithSongs[]> => {
   const supabase = createServerComponentClient({
     cookies: cookies
   });
@@ -12,7 +12,11 @@ export const getPlaylists = async (): Promise<(Playlist & { user?: { username: s
     .from('playlists')
     .select(`
       *,
-      user:users (username, email)
+      user:users (username, email),
+      playlist_songs (
+        position,
+        songs (*)
+      )
     `)
     .order('created_at', { ascending: false });
 
@@ -21,5 +25,5 @@ export const getPlaylists = async (): Promise<(Playlist & { user?: { username: s
     return [];
   }
 
-  return data || [];
+  return data as PlaylistWithSongs[];
 };

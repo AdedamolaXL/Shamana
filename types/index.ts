@@ -36,8 +36,19 @@ export interface Playlist {
   nft_metadata_uri?: string; // Add this field
 }
 
+export interface PlaylistUser {
+  username: string;
+  email: string;
+}
+
+export interface PlaylistSongEntry {
+  position: number;
+  songs: Song;
+}
+
 export interface PlaylistWithSongs extends Playlist {
-  songs: Song[];
+  user?: PlaylistUser; // 👈 matches alias in your query
+  playlist_songs?: PlaylistSongEntry[];
 }
 
 export interface PlaylistSong {
