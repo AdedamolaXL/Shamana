@@ -1,6 +1,6 @@
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
-import TribePageClient from "./TribePageClient";
+import TribePageClient from "../components/TribePageClient";
 
 interface TribePageProps {
   params: {

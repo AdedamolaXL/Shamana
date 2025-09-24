@@ -2,7 +2,7 @@ import { getPlaylists } from "@/actions/getPlaylists";
 import getSongs from "@/actions/getSongs";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
-import HomeClient from "./HomeClient";
+import HomeClient from "./components/HomeClient";
 
 export const revalidate = 0;
 

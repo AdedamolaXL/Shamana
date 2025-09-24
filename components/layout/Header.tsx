@@ -2,7 +2,7 @@
 import { useRouter } from "next/navigation";
 import { twMerge } from "tailwind-merge";
 import { RxCaretLeft, RxCaretRight } from "react-icons/rx";
-import { FaUserAlt, FaUpload } from "react-icons/fa";
+import { FaUserAlt, FaUpload, FaUsers, FaList } from "react-icons/fa";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { toast } from "react-hot-toast";
 import { useUser } from "@/hooks/useUser";
@@ -57,6 +57,26 @@ const Header: React.FC<HeaderProps> = ({ children, className }) => {
                     >
                         <RxCaretRight size={24} className="text-white" />
                     </button>
+                    
+                    {/* Tribe and Playlist Navigation Links */}
+                    <div className="flex items-center gap-x-2 ml-4">
+                        <button
+                            onClick={() => router.push('/tribes')}
+                            className="flex items-center gap-x-2 px-3 py-2 rounded-md bg-neutral-800 hover:bg-neutral-700 transition text-white text-sm font-medium"
+                            title="Music Tribes"
+                        >
+                            <FaUsers size={16} />
+                            <span className="hidden sm:inline">Tribes</span>
+                        </button>
+                        <button
+                            onClick={() => router.push('/playlists')}
+                            className="flex items-center gap-x-2 px-3 py-2 rounded-md bg-neutral-800 hover:bg-neutral-700 transition text-white text-sm font-medium"
+                            title="Playlists"
+                        >
+                            <FaList size={16} />
+                            <span className="hidden sm:inline">Playlists</span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Search input - centered on mobile, right on desktop */}

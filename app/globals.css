@@ -1,11 +1,132 @@
+/* global.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-html,
-body,
-:root {
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: 'Work Sans', sans-serif;
+    letter-spacing: -0.5px;
+    max-width: 1600px;                   
+    margin: 0 auto;
+    padding-bottom: 100px;  
+    background-color: #000;
+    color: #fff;
+  }
+  
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+}
+
+
+/* 4. Hero carousel (dynamic active slide logic) */
+.hero-slide {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.hero-slide.active {
+  opacity: 1;
+}
+
+.carousel-slide.active {
+  opacity: 1;
+  z-index: 1;
+}
+
+.carousel-slide-1 {
+  background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(106, 17, 203, 0.8) 70%
+    ),
+    url('https://res.cloudinary.com/dqhawdcol/image/upload/v1758378695/gof3qpnmxlx9sa529c0v.jpg')
+      center/cover;
+}
+
+.carousel-slide-2 {
+  background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(0, 180, 180, 0.8) 70%
+    ),
+    url('https://res.cloudinary.com/dqhawdcol/image/upload/v1758378696/oiftniuktkros8hsnrpi.jpg')
+      center/cover;
+}
+
+.carousel-slide-3 {
+  background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(25, 130, 230, 0.8) 70%
+    ),
+    url('https://res.cloudinary.com/dqhawdcol/image/upload/v1758597436/jww80vnkttzr1ne6pl74.jpg')
+      center/cover;
+}
+
+.carousel-dot.active {
+  background: rgba(255, 255, 255, 1);
+}
+
+.carousel-nav button:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+/* 5. Playlist thumbnail play button */
+.play-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.9);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.play-button:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.play-button i {
+  color: #000;
+  font-size: 20px;
+}
+
+/* 6. Player progress + volume bars (dynamic width) */
+.progress-bar,
+.volume-slider {
+  background: #333;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress {
   height: 100%;
-  background-color: black;
-  color-scheme: dark;
+  background: #6a11cb;
+  width: 30%; /* will be dynamic */
+}
+
+.volume-level {
+  height: 100%;
+  background: #6a11cb;
+  width: 60%; /* will be dynamic */
 }

@@ -7,6 +7,7 @@ import { FaUsers, FaMusic, FaPlus, FaArrowUp, FaArrowDown, FaComment, FaShare, F
 import { Button } from "@/components/ui";
 import { MediaItem } from "@/components";
 import toast from "react-hot-toast";
+import { Session } from "@supabase/auth-helpers-nextjs";
 
 interface Tribe {
   id: string;
@@ -17,12 +18,14 @@ interface Tribe {
   user_id: string;
   banner_url?: string;
   icon_url?: string;
+
 }
 
 interface TribePageClientProps {
   tribe: Tribe;
   memberCount: number;
   playlists: Playlist[];
+  session?: Session | null; 
 }
 
 const TribePageClient: React.FC<TribePageClientProps> = ({ tribe, memberCount, playlists }) => {

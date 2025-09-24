@@ -30,7 +30,7 @@ const Player = () => {
                     .from('songs')
                     .select('*')
                     .order('created_at', { ascending: false })
-                    .limit(50); // Get recent songs for better variety
+                    .limit(50);
 
                 if (error) {
                     console.error('Error fetching songs:', error);
@@ -38,11 +38,9 @@ const Player = () => {
                 }
 
                 if (songs && songs.length > 0) {
-                    // Select a random song
                     const randomIndex = Math.floor(Math.random() * songs.length);
                     setRandomSong(songs[randomIndex] as Song);
                     
-                    // Set this as the active song in the player
                     player.setId(songs[randomIndex].id);
                     player.setIds(songs.map(song => song.id));
                 }
@@ -56,24 +54,29 @@ const Player = () => {
         fetchRandomSong();
     }, [activeSong, supabase, player]);
 
-    // Don't show player if no songs are available
     if (isLoading) {
         return (
-            <div className='fixed bottom-0 bg-black w-full py-2 h-[80px] px-4 flex items-center justify-center'>
-                <div className="text-neutral-400 text-sm">Loading player...</div>
+            <div className='fixed bottom-0 bg-black w-full py-4 h-[90px] px-6 flex items-center justify-center border-t border-neutral-800'>
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-neutral-800 rounded-lg animate-pulse"></div>
+                    <div className="flex flex-col gap-2">
+                        <div className="h-4 bg-neutral-800 rounded w-32 animate-pulse"></div>
+                        <div className="h-3 bg-neutral-800 rounded w-24 animate-pulse"></div>
+                    </div>
+                </div>
             </div>
         );
     }
 
     if (!activeSong && !randomSong) {
-        return null; // No songs available at all
+        return null;
     }
 
     const currentSong = activeSong || randomSong;
     const currentSongUrl = songUrl || '';
 
     return (
-        <div className='fixed bottom-0 bg-black w-full py-2 h-[80px] px-4'>
+        <div className='fixed bottom-0 bg-black w-full py-4 h-[90px] px-6 border-t border-neutral-800 shadow-2xl player-gradient'>
             <PlayerContent 
                 song={currentSong!} 
                 songUrl={currentSongUrl} 
