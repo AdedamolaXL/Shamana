@@ -47,8 +47,9 @@ export interface PlaylistSongEntry {
 }
 
 export interface PlaylistWithSongs extends Playlist {
-  user?: PlaylistUser; // 👈 matches alias in your query
+  user?: PlaylistUser; 
   playlist_songs?: PlaylistSongEntry[];
+  song?: Song[]; 
 }
 
 export interface PlaylistSong {

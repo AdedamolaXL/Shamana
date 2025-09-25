@@ -7,6 +7,10 @@ export const addToPlaylist = async (playlistId: string, songId: string): Promise
     cookies: cookies
   });
 
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session?.user) throw new Error("Unauthorized");
+
   // Get the current max position in the playlist
   const { data: maxPositionData, error: maxError } = await supabase
     .from('playlist_songs')
@@ -23,7 +27,8 @@ export const addToPlaylist = async (playlistId: string, songId: string): Promise
     .insert({
       playlist_id: playlistId,
       song_id: songId,
-      position: nextPosition
+      position: nextPosition,
+      user_id: session.user.id 
     });
 
   if (error) {

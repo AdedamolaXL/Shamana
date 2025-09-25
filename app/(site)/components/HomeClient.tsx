@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef, SetStateAction } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Session } from "@supabase/auth-helpers-nextjs";
 import { Playlist, Song, PlaylistWithSongs } from "@/types";
 import { FaMusic, FaPlay, FaClock, FaUsers, FaFire, FaSeedling, FaStar, FaPlus } from "react-icons/fa";
@@ -222,7 +222,7 @@ const HomeClient: React.FC<HomeClientProps> = ({
     }, 5000);
   };
 
-  const showSlide = (index: SetStateAction<number>) => {
+  const showSlide = (index: number) => {
     setCurrentSlide(index);
     startAutoPlay();
   };
@@ -602,7 +602,7 @@ const playlistActivities: ActivityItem[] = initialPlaylists
         >
           <div 
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/90 w-[50px] h-[50px] rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 hover:bg-white hover:scale-110"
-            onClick={() => activity.playlistId && handlePlaylistClick(activity.playlistId)}
+            onClick={() => activity.playlist && handlePlaylistClick(activity.playlist.id)}
           >
             <i className="fas fa-play text-black text-xl"></i>
           </div>

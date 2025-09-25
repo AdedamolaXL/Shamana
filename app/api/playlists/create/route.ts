@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
+import { uploadToIPFS } from '@/lib/ipfs';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,20 +46,37 @@ export async function POST(request: NextRequest) {
     console.log('Playlist created with ID:', data.id);
     console.log('Calling NFT mint API...');
 
+    const tokenId = process.env.HEDERA_NFT_TOKEN_ID;
+if (!tokenId) {
+  console.error('HEDERA_NFT_TOKEN_ID is not set');
+  // Continue without NFT rather than failing completely
+  return NextResponse.json(data);
+}
+    
+  const playlistMetadata = {
+  name,
+  description: description || `A playlist created by ${session.user.email}`,
+  image: "", 
+  attributes: [
+    { trait_type: "Creator", value: session.user.id },
+    { trait_type: "Playlist Type", value: "User Created" },
+    { trait_type: "Song Count", value: 0 },
+  ],
+  };
+    
+    const ipfsHash = await uploadToIPFS(playlistMetadata);
+const metadataUri = `ipfs://${ipfsHash}`; 
+
     // Mint NFT for the playlist
-    const nftResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/nft/mint`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        playlistId: data.id,
-        name,
-        description,
-        userId: session.user.id,
-        userEmail: session.user.email
-      }),
-    });
+  const nftResponse = await fetch(new URL("/api/nft/mint", request.url).toString(), {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    userId: session.user.id,
+    tokenId: tokenId,
+    metadata: metadataUri, // 👈 just the URI
+  }),
+});
 
     console.log('NFT API response status:', nftResponse.status);
     
