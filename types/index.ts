@@ -45,6 +45,9 @@ export interface PlaylistUser {
 export interface PlaylistSongEntry {
   position: number;
   songs: Song;
+  user_id?: string;
+  user?: PlaylistUser;
+  added_at?: string;
 }
 
 export interface PlaylistWithSongs extends Playlist {
@@ -65,4 +68,13 @@ export interface LikedSong {
   user_id: string;
   song_id: string;
   created_at?: string;
+}
+
+export interface Contributor {
+  id: string;
+  username: string;
+  email: string;
+  is_curator: boolean;
+  songs_added: number;
+  songs?: { id: string; title: string }[];
 }

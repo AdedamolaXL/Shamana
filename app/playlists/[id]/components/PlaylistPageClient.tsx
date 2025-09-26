@@ -2,14 +2,23 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PlaylistWithSongs, Song } from "@/types";
-import { FaMusic, FaBookmark, FaHeart, FaPlay, FaClock } from "react-icons/fa";
+import { FaMusic, FaBookmark, FaHeart, FaPlay, FaClock, FaCrown, FaPause } from "react-icons/fa";
 import toast from "react-hot-toast";
 import { useUser } from "@/hooks/useUser";
 import useOnPlay from "@/hooks/useOnPlay";
+import usePlayer from "@/hooks/usePlayer";
 
 interface PlaylistPageClientProps {
   playlist: PlaylistWithSongs;
   allSongs: Song[];
+}
+
+interface Contributor {
+  id?: string;
+  username: string;
+  email: string;
+  is_curator: boolean;
+  songs_added: number;
 }
 
 const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSongs }) => {
@@ -29,10 +38,67 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
   });
   const [isVoting, setIsVoting] = useState(false);
   const [userVote, setUserVote] = useState<'upvote' | 'downvote' | null>(null);
+  const [contributors, setContributors] = useState<Contributor[]>([]); // New state for contributors
+  const [isLoadingContributors, setIsLoadingContributors] = useState(true);
+  const [isPlayingPlaylist, setIsPlayingPlaylist] = useState(false);
 
   const router = useRouter();
   const { user } = useUser();
+  const player = usePlayer();
   const onPlay = useOnPlay(allSongs);
+
+   useEffect(() => {
+    // Check if the current playlist is being played
+    const isPlaylistActive = currentPlaylist.playlist_songs?.some(
+      ps => ps.songs.id === player.activeId
+    );
+    
+    setIsPlayingPlaylist(Boolean(isPlaylistActive && player.activeId !== undefined));
+  }, [player.activeId, currentPlaylist.playlist_songs]);
+
+  // Fetch contributors when component mounts
+  useEffect(() => {
+    const fetchContributors = async () => {
+      if (!currentPlaylist.id) return;
+      
+      try {
+        setIsLoadingContributors(true);
+        const response = await fetch(`/api/playlists/${currentPlaylist.id}/contributors`);
+        if (response.ok) {
+          const data = await response.json();
+          setContributors(data.contributors || []);
+        } else {
+          console.error('Failed to fetch contributors');
+          // Fallback: create basic contributor list from available data
+          setContributors(getFallbackContributors());
+        }
+      } catch (error) {
+        console.error('Error fetching contributors:', error);
+        setContributors(getFallbackContributors());
+      } finally {
+        setIsLoadingContributors(false);
+      }
+    };
+
+    fetchContributors();
+  }, [currentPlaylist.id]);
+
+  const getFallbackContributors = (): Contributor[] => {
+    const contributors: Contributor[] = [];
+    
+    // Add original curator
+    if (currentPlaylist.user) {
+      contributors.push({
+        id: currentPlaylist.user_id,
+        username: getCreatorName(),
+        email: currentPlaylist.user.email || '',
+        is_curator: true,
+        songs_added: currentPlaylist.playlist_songs?.length || 0 // Estimate all songs added by curator initially
+      });
+    }
+    
+    return contributors;
+  };
 
   // Check if current user has collected this playlist and get collection count
   useEffect(() => {
@@ -51,7 +117,49 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
   }, 10000); // Check every 10 seconds
 
   return () => clearInterval(interval);
-}, [playlist.id]);
+  }, [playlist.id]);
+  
+  // Get playlist songs for playing
+  const getPlaylistSongs = (): Song[] => {
+    if (!currentPlaylist.playlist_songs) return [];
+    
+    return currentPlaylist.playlist_songs
+      .sort((a, b) => (a.position || 0) - (b.position || 0))
+      .map(ps => ps.songs)
+      .filter(song => song !== undefined) as Song[];
+  };
+
+    // Handle playlist play/pause
+  const handlePlayPausePlaylist = () => {
+    const playlistSongs = getPlaylistSongs();
+    
+    if (playlistSongs.length === 0) {
+      toast.error("No songs in playlist to play");
+      return;
+    }
+
+    if (isPlayingPlaylist) {
+      // Pause playback
+      // You might need to implement pause functionality in your player hook
+      console.log("Pausing playlist playback");
+      // For now, we'll just set the state
+      setIsPlayingPlaylist(false);
+    } else {
+      // Play the playlist
+      if (playlistSongs.length > 0) {
+        // Set all playlist songs as the player queue
+        player.setIds(playlistSongs.map(song => song.id));
+        
+        // Play the first song in the playlist
+        const firstSongId = playlistSongs[0].id;
+        player.setId(firstSongId);
+        
+        setIsPlayingPlaylist(true);
+        toast.success(`Playing playlist: ${currentPlaylist.name}`);
+      }
+    }
+  };
+
 
   const fetchReputationData = async () => {
     if (!playlist.id) return;
@@ -480,10 +588,25 @@ const fetchCollectionCount = async () => {
             
             {/* Playlist Actions */}
             <div className="flex gap-[15px] mb-[20px]">
-              {/* <button className={`flex items-center gap-1 text-gray-400 text-sm transition-colors hover:text-white ${isLiked ? 'text-[#6a11cb]' : ''}`} onClick={handleLike}>
-                <i className={`${isLiked ? 'fas' : 'far'} fa-heart`}></i>
-                <span>Like</span>
-              </button> */}
+             <button className={`flex items-center gap-1 text-gray-400 text-sm transition-colors hover:text-white  ${
+                  isPlayingPlaylist 
+                    ? ' text-white hover:bg-green-600' 
+                    : ' text-white hover:bg-[#7a2bdb]'
+                }`}
+                onClick={handlePlayPausePlaylist}
+                disabled={getPlaylistSongs().length === 0}>
+                {isPlayingPlaylist ? (
+                  <>
+                    <FaPause className="text-sm" />
+                    <span>Pause</span>
+                  </>
+                ) : (
+                  <>
+                    <FaPlay className="text-sm" />
+                    <span>Play</span>
+                  </>
+                )}
+              </button> 
 
                {/* Like/Upvote Button */}
               <button 
@@ -623,16 +746,63 @@ const fetchCollectionCount = async () => {
             </div>
 
             {/* Contributors Section */}
-            <h3 className="text-[1.2rem] font-semibold mb-[15px]">Contributors</h3>
-            <div className="flex my-[15px] mb-[25px]">
-              {/* Placeholder for contributors - you might want to fetch real contributor data */}
-              <div className="w-[35px] h-[35px] rounded-full bg-[#6a11cb] flex items-center justify-center text-[0.8rem] text-white">
-                {getCreatorName().charAt(0).toUpperCase()}
-              </div>
-              <div className="text-xs text-gray-400 ml-2 flex items-center">
-                Curated by {getCreatorName()}
-              </div>
+             <h3 className="text-[1.2rem] font-semibold mb-[15px]">Contributors</h3>
+              <div className="space-y-3">
+              {isLoadingContributors ? (
+                // Loading skeleton
+                Array.from({ length: 3 }).map((_, index) => (
+                  <div key={index} className="flex items-center gap-3 animate-pulse">
+                    <div className="w-8 h-8 bg-neutral-700 rounded-full"></div>
+                    <div className="flex-1">
+                      <div className="h-3 bg-neutral-700 rounded w-20 mb-1"></div>
+                      <div className="h-2 bg-neutral-700 rounded w-16"></div>
+                    </div>
+                  </div>
+                ))
+              ) : contributors.length > 0 ? (
+                contributors.map((contributor) => (
+                  <div key={contributor.id} className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium ${
+                      contributor.is_curator 
+                        ? 'bg-gradient-to-br from-yellow-500 to-amber-500' 
+                        : 'bg-gradient-to-br from-[#6a11cb] to-[#2575fc]'
+                    }`}>
+                      {contributor.username.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-white truncate">
+                          {contributor.username}
+                        </span>
+                        {contributor.is_curator && (
+                          <span className="flex items-center gap-1 bg-yellow-500/20 text-yellow-300 px-2 py-0.5 rounded-full text-xs">
+                            <FaCrown size={10} />
+                            Curator
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-neutral-400">
+                        {contributor.songs_added} song{contributor.songs_added !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4 text-neutral-400 text-sm">
+                  <FaMusic className="mx-auto mb-2 text-lg" />
+                  <p>No contributors yet</p>
+                </div>
+              )}
             </div>
+
+
+            {contributors.length > 0 && (
+              <div className="mt-4 pt-3 border-t border-neutral-700">
+                <div className="text-xs text-neutral-400 text-center">
+                  {contributors.length} contributor{contributors.length !== 1 ? 's' : ''}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>

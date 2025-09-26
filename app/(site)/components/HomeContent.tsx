@@ -4,12 +4,12 @@ import { MediaItem } from "@/components";
 import PlaylistItem from "@/app/playlists/components/PlaylistItem";
 import useOnPlay from "@/hooks/useOnPlay";
 
-interface PageContentProps {
+interface HomeContentProps {
     songs?: Song[];
     playlists?: Playlist[];
 }
 
-const PageContent: React.FC<PageContentProps> = ({ songs, playlists }) => {
+const HomeContent: React.FC<HomeContentProps> = ({ songs, playlists }) => {
     const onPlay = useOnPlay(songs || []);
 
     if (songs && songs.length === 0) {
@@ -48,4 +48,4 @@ const PageContent: React.FC<PageContentProps> = ({ songs, playlists }) => {
     )
 }
 
-export default PageContent;
+export default HomeContent;

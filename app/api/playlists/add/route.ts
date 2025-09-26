@@ -53,35 +53,31 @@ export async function POST(request: NextRequest) {
     const nextPosition = maxPositionData ? maxPositionData.position + 1 : 0;
 
     // Add the song to the playlist
-    const { error } = await supabase
+     const { data: newPlaylistSong, error } = await supabase
       .from('playlist_songs')
       .insert({
         playlist_id: playlistId,
         song_id: songId,
         position: nextPosition,
-        user_id: session.user.id
-      });
+        user_id: session.user.id  // This tracks who added the song
+      })
+      .select(`
+        *,
+        user:users(username, email)
+      `)
+      .single();
 
     if (error) {
       console.error('Database error:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // ✅ AUTO-COLLECT: Check if user should automatically collect this playlist
-    if (playlist.nft_token_id && playlist.user_id !== session.user.id) {
-      
-      // Check if user has already collected this playlist
-      const { data: existingCollection } = await supabase
-        .from('playlist_collections')
-        .select('id')
-        .eq('playlist_id', playlistId)
-        .eq('user_id', session.user.id)
-        .single();
+    console.log('Song added by user:', session.user.id);
 
-      if (!existingCollection) {
-        console.log('Auto-collecting playlist for user:', session.user.id);
-        
-        // Call the existing NFT collection API
+    const autoCollectPlaylist = async (playlistId: string, userId: string, userEmail: string) => {
+      try {
+        console.log(`Attempting auto-collection for user ${userId} on playlist ${playlistId}`);
+    
         const collectResponse = await fetch(new URL('/api/nft/collect', request.url), {
           method: 'POST',
           headers: {
@@ -89,22 +85,60 @@ export async function POST(request: NextRequest) {
           },
           body: JSON.stringify({
             playlistId: playlistId,
-            userId: session.user.id,
-            userEmail: session.user.email
+            userId: userId,
+            userEmail: userEmail
           }),
         });
 
         if (collectResponse.ok) {
-          console.log('Playlist auto-collected successfully');
+          const result = await collectResponse.json();
+          console.log('🎉 Playlist auto-collected successfully:', result);
+          return { success: true, data: result };
         } else {
-          console.warn('Auto-collection failed, but song was added');
+          const error = await collectResponse.json();
+          console.warn('Auto-collection failed:', error);
+          return { success: false, error };
         }
+      } catch (error) {
+        console.error('Auto-collection error:', error);
+        return { success: false, error };
       }
-    }
+    };
+
+
+    // ✅ AUTO-COLLECT: Check if user should automatically collect this playlist
+    if (playlist.nft_token_id && playlist.user_id !== session.user.id) {
+  // Check if user has already collected this playlist
+  const { data: existingCollection } = await supabase
+    .from('playlist_collections')
+    .select('id, collected_at')
+    .eq('playlist_id', playlistId)
+    .eq('user_id', session.user.id)
+    .single();
+
+  if (!existingCollection) {
+    // Use setTimeout to make it non-blocking
+    setTimeout(async () => {
+      const collectionResult = await autoCollectPlaylist(
+        playlistId, 
+        session.user.id, 
+        session.user.email || ''
+      );
+      
+      if (collectionResult.success) {
+        // Optional: Send a toast notification to the user
+        console.log('User automatically collected the playlist NFT');
+      }
+    }, 1000); // 1 second delay to ensure song addition completes
+  }
+}
+  
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Song added to playlist' 
+      message: 'Song added to playlist',
+      // autoCollectionTriggered: !existingCollection && playlist.nft_token_id && playlist.user_id !== session.user.id
+      addedBy: newPlaylistSong.user
     });
   } catch (error) {
     console.error('Internal server error:', error);
