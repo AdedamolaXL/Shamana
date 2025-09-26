@@ -11,6 +11,33 @@ import { useUser } from "@/hooks/useUser";
 import uniqid from "uniqid";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 
+const getAudioDuration = (file: File): Promise<number> => {
+  return new Promise((resolve, reject) => {
+    const audio = new Audio();
+    const url = URL.createObjectURL(file);
+    
+    audio.src = url;
+    
+    audio.addEventListener('loadedmetadata', () => {
+      const duration = Math.round(audio.duration);
+      URL.revokeObjectURL(url); // Clean up
+      resolve(duration);
+    });
+    
+    audio.addEventListener('error', (error) => {
+      URL.revokeObjectURL(url); // Clean up
+      console.error('Error loading audio:', error);
+      reject(new Error('Could not load audio file'));
+    });
+    
+    // Set a timeout in case the file is corrupted or unsupported
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Timeout loading audio file'));
+    }, 10000); // 10 second timeout
+  });
+}
+
 const UploadModal = () => {
     const [isLoading, setIsLoading] = useState(false); 
     const uploadModal = useUploadModal();
@@ -78,6 +105,15 @@ if (!songsAccessible || !imagesAccessible) {
             if (!imageFile || !songFile || !user) {
                 toast.error("Missing fields")
                 return;
+            }
+
+            let duration = 225; // Default fallback (3:45)
+            try {
+                duration = await getAudioDuration(songFile);
+                console.log('Calculated song duration:', duration, 'seconds');
+            } catch (error) {
+                console.warn('Could not calculate duration, using default:', error);
+                // Continue with default duration
             }
 
             const uniqueId = uniqid();
@@ -167,7 +203,7 @@ if (!songsAccessible || !imagesAccessible) {
                     <Input id="image" type="file" accept="image/*" disabled={isLoading} {...register("image", { required: true })} placeholder="Song Image"/>
                 </div>
                 <Button disabled={isLoading} type="submit">
-                    Create
+                    Upload
                 </Button>
             </form>
         </Modal>

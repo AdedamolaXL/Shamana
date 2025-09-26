@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       transactionId,
-      message: `Successfully ${voteType}d playlist` 
+       message: `Successfully ${voteType}d playlist (${voteType === 'upvote' ? '+10' : '-10'} points)` 
     });
   } catch (error) {
     console.error('Error submitting vote:', error);

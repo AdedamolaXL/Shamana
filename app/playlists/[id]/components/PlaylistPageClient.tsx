@@ -43,6 +43,16 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
     checkUserVote();
   }, [playlist, user]);
 
+  useEffect(() => {
+  const interval = setInterval(() => {
+    if (playlist.id) {
+      fetchCollectionCount();
+    }
+  }, 10000); // Check every 10 seconds
+
+  return () => clearInterval(interval);
+}, [playlist.id]);
+
   const fetchReputationData = async () => {
     if (!playlist.id) return;
 
@@ -90,151 +100,181 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
     }
   };
 
-  // Separate function to check collection status
-  const checkIfCollected = async () => {
-    if (!user || !playlist.id) {
-      setIsCollected(false);
-      return;
-    }
+  // Update the checkIfCollected function to be more robust
+const checkIfCollected = async () => {
+  if (!user || !playlist.id) {
+    setIsCollected(false);
+    return;
+  }
 
-    try {
-      const response = await fetch(`/api/nft/check-collection?playlistId=${playlist.id}&userId=${user.id}`);
+  try {
+    const response = await fetch(`/api/nft/check-collection?playlistId=${playlist.id}&userId=${user.id}`);
+    if (response.ok) {
       const data = await response.json();
+      console.log('Collection check data:', data); // Debug log
       setIsCollected(data.collected);
-    } catch (error) {
-      console.error("Error checking collection status:", error);
+    } else {
+      console.error('Failed to check collection status');
       setIsCollected(false);
     }
-  };
+  } catch (error) {
+    console.error("Error checking collection status:", error);
+    setIsCollected(false);
+  }
+};
 
-  // Fetch the number of times this playlist has been collected
-  const fetchCollectionCount = async () => {
-    if (!playlist.id) return;
+ // Update the fetchCollectionCount function
+const fetchCollectionCount = async () => {
+  if (!currentPlaylist.id) return;
 
-    try {
-      const response = await fetch(`/api/nft/collection-count?playlistId=${playlist.id}`);
+  try {
+    const response = await fetch(`/api/nft/collection-count?playlistId=${currentPlaylist.id}`);
+    if (response.ok) {
       const data = await response.json();
+      console.log('Collection count data:', data); // Debug log
       setCollectionCount(data.count || 0);
-    } catch (error) {
-      console.error("Error fetching collection count:", error);
+    } else {
+      console.error('Failed to fetch collection count');
       setCollectionCount(0);
     }
-  };
+  } catch (error) {
+    console.error("Error fetching collection count:", error);
+    setCollectionCount(0);
+  }
+};
 
     const handleVote = async (voteType: 'upvote' | 'downvote') => {
-    if (!user) {
-      toast.error("Please sign in to vote");
-      return;
+  if (!user) {
+    toast.error("Please sign in to vote");
+    return;
+  }
+
+  if (!playlist.id) {
+    toast.error("Playlist ID is required");
+    return;
+  }
+
+  setIsVoting(true);
+  try {
+    const response = await fetch('/api/reputation/vote', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        playlistId: playlist.id,
+        voteType: voteType
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to submit vote');
     }
 
-    if (!playlist.id) {
-      toast.error("Playlist ID is required");
-      return;
-    }
-
-    setIsVoting(true);
-    try {
-      const response = await fetch('/api/reputation/vote', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          playlistId: playlist.id,
-          voteType: voteType
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to submit vote');
-      }
-
-      // Update local state
-      if (voteType === 'upvote') {
-        if (userVote === 'downvote') {
-          // Changing from downvote to upvote
-          setReputationData(prev => ({
-            ...prev,
-            score: prev.score + 2, // +1 for upvote, +1 for removing downvote
-            upvotes: prev.upvotes + 1,
-            downvotes: prev.downvotes - 1,
-            totalVotes: prev.totalVotes
-          }));
-        } else if (userVote === null) {
-          // New upvote
-          setReputationData(prev => ({
-            ...prev,
-            score: prev.score + 1,
-            upvotes: prev.upvotes + 1,
-            totalVotes: prev.totalVotes + 1
-          }));
-        }
-        // If already upvoted, this would be an "unvote" handled below
-      } else if (voteType === 'downvote') {
-        if (userVote === 'upvote') {
-          // Changing from upvote to downvote
-          setReputationData(prev => ({
-            ...prev,
-            score: prev.score - 2, // -1 for downvote, -1 for removing upvote
-            upvotes: prev.upvotes - 1,
-            downvotes: prev.downvotes + 1,
-            totalVotes: prev.totalVotes
-          }));
-        } else if (userVote === null) {
-          // New downvote
-          setReputationData(prev => ({
-            ...prev,
-            score: prev.score - 1,
-            downvotes: prev.downvotes + 1,
-            totalVotes: prev.totalVotes + 1
-          }));
-        }
-      }
-
-      // Handle unvoting (clicking the same vote type again)
-      if (userVote === voteType) {
-        // User is removing their vote
-        const scoreChange = voteType === 'upvote' ? -1 : 1;
+    // Update local state with new weights (+10 for upvote, -10 for downvote)
+    if (voteType === 'upvote') {
+      if (userVote === 'downvote') {
+        // Changing from downvote to upvote: +20 points (remove -10, add +10)
         setReputationData(prev => ({
           ...prev,
-          score: prev.score + scoreChange,
-          upvotes: voteType === 'upvote' ? prev.upvotes - 1 : prev.upvotes,
-          downvotes: voteType === 'downvote' ? prev.downvotes - 1 : prev.downvotes,
-          totalVotes: prev.totalVotes - 1
+          score: prev.score + 20,
+          upvotes: prev.upvotes + 1,
+          downvotes: prev.downvotes - 1,
+          totalVotes: prev.totalVotes
         }));
-        setUserVote(null);
-        setIsLiked(false);
-      } else {
-        setUserVote(voteType);
-        setIsLiked(voteType === 'upvote');
+      } else if (userVote === null) {
+        // New upvote: +10 points
+        setReputationData(prev => ({
+          ...prev,
+          score: prev.score + 10,
+          upvotes: prev.upvotes + 1,
+          totalVotes: prev.totalVotes + 1
+        }));
       }
-
-      toast.success(data.message || `Successfully ${voteType}d playlist`);
-      
-      // Refresh reputation data to ensure consistency
-      setTimeout(() => {
-        fetchReputationData();
-      }, 500);
-
-    } catch (error: any) {
-      console.error('Error submitting vote:', error);
-      toast.error(error.message || 'Failed to submit vote');
-    } finally {
-      setIsVoting(false);
+    } else if (voteType === 'downvote') {
+      if (userVote === 'upvote') {
+        // Changing from upvote to downvote: -20 points (remove +10, add -10)
+        setReputationData(prev => ({
+          ...prev,
+          score: prev.score - 20,
+          upvotes: prev.upvotes - 1,
+          downvotes: prev.downvotes + 1,
+          totalVotes: prev.totalVotes
+        }));
+      } else if (userVote === null) {
+        // New downvote: -10 points
+        setReputationData(prev => ({
+          ...prev,
+          score: prev.score - 10,
+          downvotes: prev.downvotes + 1,
+          totalVotes: prev.totalVotes + 1
+        }));
+      }
     }
-  };
 
-  // Calculate total duration (placeholder)
-  const calculateDuration = () => {
-    const songCount = currentPlaylist.playlist_songs?.length || 0;
-    const avgSongMinutes = 3.5;
-    const totalMinutes = songCount * avgSongMinutes;
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = Math.floor(totalMinutes % 60);
-    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+    // Handle unvoting (clicking the same vote type again)
+    if (userVote === voteType) {
+      // User is removing their vote
+      const scoreChange = voteType === 'upvote' ? -10 : 10;
+      setReputationData(prev => ({
+        ...prev,
+        score: prev.score + scoreChange,
+        upvotes: voteType === 'upvote' ? prev.upvotes - 1 : prev.upvotes,
+        downvotes: voteType === 'downvote' ? prev.downvotes - 1 : prev.downvotes,
+        totalVotes: prev.totalVotes - 1
+      }));
+      setUserVote(null);
+      setIsLiked(false);
+    } else {
+      setUserVote(voteType);
+      setIsLiked(voteType === 'upvote');
+    }
+
+    toast.success(data.message || `Successfully ${voteType}d playlist`);
+    
+    // Refresh reputation data to ensure consistency
+    setTimeout(() => {
+      fetchReputationData();
+    }, 500);
+
+  } catch (error: any) {
+    console.error('Error submitting vote:', error);
+    toast.error(error.message || 'Failed to submit vote');
+  } finally {
+    setIsVoting(false);
+  }
   };
+  
+  const formatDuration = (seconds: number = 0): string => {
+    if (!seconds || seconds <= 0) return '0:00';
+    
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+  const calculateDuration = () => {
+    if (!currentPlaylist.playlist_songs || currentPlaylist.playlist_songs.length === 0) {
+        return '0:00';
+    }
+    
+    // Sum up all song durations in seconds
+    const totalSeconds = currentPlaylist.playlist_songs.reduce((total, playlistSong) => {
+        return total + (playlistSong.songs.duration || 0);
+    }, 0);
+    
+    // Convert to hours and minutes
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    
+    if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+    } else {
+        return `${minutes}m`;
+    }
+};
 
   // Get creator name
   const getCreatorName = () => {
@@ -297,49 +337,54 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
     }
   };
 
-  const handleSavePlaylist = async () => {
-    if (!user) {
-      toast.error("Please sign in to collect this playlist");
-      return;
+ const handleSavePlaylist = async () => {
+  if (!user) {
+    toast.error("Please sign in to collect this playlist");
+    return;
+  }
+
+  if (isCreator) {
+    toast.error("You cannot collect your own playlist");
+    return;
+  }
+
+  if (isCollected) {
+    toast.success("You already collected this playlist!");
+    return;
+  }
+
+  setIsSaving(true);
+  try {
+    const response = await fetch("/api/nft/collect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        playlistId: currentPlaylist.id,
+        userId: user.id,
+        userEmail: user.email,
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to collect playlist");
     }
 
-    if (isCreator) {
-      toast.error("You cannot collect your own playlist");
-      return;
-    }
-
-    if (isCollected) {
-      toast.success("You already collected this playlist!");
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const response = await fetch("/api/nft/collect", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          playlistId: currentPlaylist.id,
-          userId: user.id,
-          userEmail: user.email,
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Failed to collect playlist");
-
-      // Refresh collection status and count
+    // Refresh collection status and count with a small delay to ensure DB is updated
+    setTimeout(async () => {
       await checkIfCollected();
       await fetchCollectionCount();
-      toast.success("Playlist collected as NFT! 🎉");
-      router.refresh();
-    } catch (error: any) {
-      console.error("Error saving playlist:", error);
-      toast.error(error.message || "Failed to collect playlist");
-    } finally {
-      setIsSaving(false);
-    }
-  };
+    }, 500);
+    
+    toast.success("Playlist collected as NFT! 🎉");
+  } catch (error: any) {
+    console.error("Error saving playlist:", error);
+    toast.error(error.message || "Failed to collect playlist");
+  } finally {
+    setIsSaving(false);
+  }
+};
+
 
   const handleSaveChanges = async () => {
     if (!user) {
@@ -399,17 +444,19 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
               <i className="fas fa-clock"></i>
               <span>{calculateDuration()}</span>
             </div>
-            <div className="flex items-center gap-1">
-              <i className="fas fa-heart"></i>
-              <span>{/* Likes count would go here */}0 likes</span>
-            </div>
-            <div className="flex items-center gap-1">
+            {/* <div className="flex items-center gap-1">
               <i className="fas fa-play"></i>
-              <span>{/* Play count would go here */}0 plays</span>
-            </div>
+              <span>0 plays</span>
+            </div> */}
             <div className="flex items-center gap-2">
               <FaBookmark className="text-sm" />
-              <span>{collectionCount} collections</span>
+              <span>{collectionCount} collectors</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <i className="fas fa-star"></i>
+              <span className={`font-bold ${reputationData.score > 0 ? 'text-green-500' : reputationData.score < 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                {reputationData.score}%
+              </span>
             </div>
           </div>
         </div>
@@ -433,10 +480,10 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
             
             {/* Playlist Actions */}
             <div className="flex gap-[15px] mb-[20px]">
-              <button className={`flex items-center gap-1 text-gray-400 text-sm transition-colors hover:text-white ${isLiked ? 'text-[#6a11cb]' : ''}`} onClick={handleLike}>
+              {/* <button className={`flex items-center gap-1 text-gray-400 text-sm transition-colors hover:text-white ${isLiked ? 'text-[#6a11cb]' : ''}`} onClick={handleLike}>
                 <i className={`${isLiked ? 'fas' : 'far'} fa-heart`}></i>
                 <span>Like</span>
-              </button>
+              </button> */}
 
                {/* Like/Upvote Button */}
               <button 
@@ -497,20 +544,8 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
             </div>
 
 
-            <div className="mb-4 p-3 bg-[#1a1a1a] rounded-lg">
-              <div className="flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-400">Reputation Score:</span>
-                  <span className={`font-bold ${reputationData.score > 0 ? 'text-green-500' : reputationData.score < 0 ? 'text-red-500' : 'text-gray-400'}`}>
-                    {reputationData.score > 0 ? '+' : ''}{reputationData.score}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-400">Total Votes:</span>
-                  <span className="font-bold text-white">{reputationData.totalVotes}</span>
-                </div>
-              </div>
-            </div>
+            
+
 
             {/* Song List */}
             <div className="flex flex-col">
@@ -521,7 +556,7 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
                     <div className="text-sm font-medium">{playlistSong.songs.title}</div>
                     <div className="text-xs text-gray-500">{playlistSong.songs.author}</div>
                   </div>
-                  <span className="text-xs text-gray-400">3:45</span>
+                  <span className="text-xs text-gray-400"> {formatDuration(playlistSong.songs.duration)}</span>
                   <div className="flex items-center gap-2 ml-4">
                     <button className="text-gray-400 hover:text-white transition">
                       <i className="far fa-heart"></i>
@@ -564,15 +599,15 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
           <div className="bg-[#111] rounded-xl p-5">
             <h3 className="text-[1.2rem] font-semibold mb-[15px]">Song Queue</h3>
             <div className="mb-[25px]">
-              {availableSongs.slice(0, 8).map((song, i) => (
+              {availableSongs.slice(0, 16).map((song, i) => (
                 <div key={song.id} className="flex items-center gap-[10px] py-2 border-b border-[#222] last:border-none">
                   <div className="flex-1">
                     <div className="text-[0.9rem] font-medium">
-                      {i === 0 ? 'Next: ' : 'Then: '}{song.title}
+                      {song.title}
                     </div>
                     <div className="text-[0.8rem] text-[#999]">{song.author}</div>
                   </div>
-                  <span className="text-[0.8rem] text-[#999]">3:45</span>
+                  <span className="text-[0.8rem] text-[#999]"> {formatDuration(song.duration)}</span>
                   <button
                     className="text-sm text-[#6a11cb] hover:text-white transition-colors"
                     onClick={() => handleAddToPlaylist(song.id)}

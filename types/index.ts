@@ -20,7 +20,8 @@ export interface Song {
     title?: string,
     song_path?: string,
     image_path?: string
-    created_at?: string;
+  created_at?: string;
+   duration?: number;
 }
 
 export interface Playlist {

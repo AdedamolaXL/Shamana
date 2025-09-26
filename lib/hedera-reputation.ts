@@ -136,7 +136,7 @@ export class ReputationSystem {
       }
     });
 
-    const score = upvotes - downvotes;
+    const score = (upvotes * 10) - (downvotes * 10);
     const totalVotes = upvotes + downvotes;
 
     return {

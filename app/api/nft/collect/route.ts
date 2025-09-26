@@ -1,4 +1,3 @@
-// app/api/nft/collect/route.ts
 import { NextResponse } from "next/server";
 import { mintNft, activateAndGetRecipientAccount } from "@/lib/hedera-tokens";
 import { uploadToIPFS } from "@/lib/ipfs";
@@ -64,6 +63,29 @@ export async function POST(req: Request) {
       );
     }
 
+    // ✅ ACTIVATE USER'S HEDERA ACCOUNT BEFORE MINTING
+    console.log(`Activating Hedera account for user: ${userId}`);
+    let recipientAccount;
+    try {
+      recipientAccount = await activateAndGetRecipientAccount(userId);
+      console.log('Account activation result:', recipientAccount);
+    } catch (activationError) {
+      console.error('Failed to activate Hedera account:', activationError);
+      const errorMessage = (activationError && typeof activationError === "object" && "message" in activationError)
+        ? (activationError as { message: string }).message
+        : String(activationError);
+      return NextResponse.json(
+        { error: `Failed to activate Hedera account: ${errorMessage}` },
+        { status: 500 }
+      );
+    }
+
+    const recipientAccountId = typeof recipientAccount === "string" 
+      ? recipientAccount 
+      : recipientAccount.accountId;
+
+    console.log(`Using recipient account: ${recipientAccountId}`);
+
     // Create COLLECTOR-specific metadata
     const metadata = {
       name: `${playlist.name} - Collector Edition`,
@@ -94,7 +116,7 @@ export async function POST(req: Request) {
       }
     };
 
-    // Upload FULL metadata to IPFS
+    // Upload metadata to IPFS
     const metadataCid = await uploadToIPFS(metadata);
     const metadataUri = `ipfs://${metadataCid}`;
 
@@ -121,19 +143,12 @@ export async function POST(req: Request) {
       }
     }
 
-    // Ensure recipient account exists
-    const recipientAccount = await activateAndGetRecipientAccount(userId);
-    const recipientAccountId = typeof recipientAccount === "string" 
-      ? recipientAccount 
-      : recipientAccount.accountId;
-
-    // Mint COLLECTOR NFT with minimal metadata
+    // Mint COLLECTOR NFT
     const tokenId = process.env.HEDERA_NFT_TOKEN_ID;
     if (!tokenId) {
       throw new Error("NFT token ID not configured");
     }
 
-    // Use the same approach as your creator NFT - just pass the minimal metadata string
     const result = await mintNft(tokenId, [Buffer.from(minimalMetadata)], recipientAccountId);
 
     // Record the collection in database
@@ -144,19 +159,19 @@ export async function POST(req: Request) {
         user_id: userId,
         nft_token_id: result.tokenId,
         nft_serial_number: result.serials[0],
-        nft_metadata_uri: metadataUri, // Store the full IPFS URI
         collected_at: new Date().toISOString()
       });
 
     if (collectionError) {
       console.error("Failed to record collection:", collectionError);
-      // Don't fail the entire request if DB insertion fails
     }
 
     return NextResponse.json({ 
       success: true, 
       serialNumber: result.serials[0],
       metadataUri,
+      accountActivated: true,
+      recipientAccountId,
       ...result 
     });
   } catch (err: any) {

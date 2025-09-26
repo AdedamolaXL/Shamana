@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { uploadToIPFS } from '@/lib/ipfs';
+import { activateAndGetRecipientAccount } from "@/lib/hedera-tokens";
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,24 @@ export async function POST(request: NextRequest) {
 
     console.log('Creating playlist for user:', session.user.id);
     
+    // ✅ ACTIVATE CREATOR'S HEDERA ACCOUNT FIRST
+    console.log(`Activating Hedera account for creator: ${session.user.id}`);
+    let creatorAccount;
+    try {
+      creatorAccount = await activateAndGetRecipientAccount(session.user.id);
+      console.log('Creator account activation result:', creatorAccount);
+    } catch (activationError) {
+      console.error('Failed to activate creator Hedera account:', activationError);
+      const errorMessage =
+        activationError && typeof activationError === 'object' && 'message' in activationError
+          ? `Failed to activate Hedera account: ${(activationError as { message: string }).message}`
+          : 'Failed to activate Hedera account: Unknown error';
+      return NextResponse.json(
+        { error: errorMessage },
+        { status: 500 }
+      );
+    }
+
     // Create the playlist
     const { data, error } = await supabase
       .from('playlists')
@@ -42,6 +61,7 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
 
     console.log('Playlist created with ID:', data.id);
     console.log('Calling NFT mint API...');
@@ -101,6 +121,24 @@ const metadataUri = `ipfs://${ipfsHash}`;
 
     if (updateError) {
       console.error('Failed to update playlist with NFT info:', updateError);
+    }
+
+        console.log('Creating collection record for creator...');
+    const { error: collectionError } = await supabase
+      .from('playlist_collections')
+      .insert({
+        playlist_id: data.id,
+        user_id: session.user.id,
+        nft_token_id: nftData.tokenId,
+        nft_serial_number: nftData.serialNumber,
+        nft_metadata_uri: nftData.metadataUri,
+        collected_at: new Date().toISOString()
+      });
+
+    if (collectionError) {
+      console.error('Failed to create creator collection record:', collectionError);
+    } else {
+      console.log('Creator collection record created successfully');
     }
 
     console.log('Playlist created with NFT successfully');
