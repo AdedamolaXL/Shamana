@@ -9,6 +9,7 @@ import { useUser } from "@/hooks/useUser";
 import useAuthModal from "@/hooks/useAuthModal";
 import useUploadModal from "@/hooks/useUploadModal";
 import { SearchInput, Button } from "../ui";
+import { useState } from "react";
 
 interface HeaderProps {
     children?: React.ReactNode;
@@ -21,6 +22,12 @@ const Header: React.FC<HeaderProps> = ({ children, className }) => {
     const authModal = useAuthModal();
     const uploadModal = useUploadModal();
     const supabaseClient = useSupabaseClient();
+    const [showDropdown, setShowDropdown] = useState(false);
+
+
+  const toggleDropdown = () => {
+    setShowDropdown(!showDropdown);
+  };
 
     const handleLogout = async () => {
         const { error } = await supabaseClient.auth.signOut();
@@ -42,60 +49,73 @@ const Header: React.FC<HeaderProps> = ({ children, className }) => {
 
     return (
         <div className={twMerge(`h-fit bg-gradient-to-b from-neutral-900 to-black p-6 w-full`, className)}>
+            
+        
+
+            <div className="flex items-center justify-between p-5 relative max-w-[1600px] mx-auto">
             <div className="w-full flex items-center justify-between">
                 {/* Navigation buttons */}
-                <div className="hidden md:flex gap-x-2 items-center">
-                    <button 
-                        className="rounded-full bg-black flex items-center justify-center hover:opacity-75 transition p-2"
-                        onClick={() => router.back()}
-                    >
-                        <RxCaretLeft size={24} className="text-white" />
-                    </button>
-                    <button 
-                        className="rounded-full bg-black flex items-center justify-center hover:opacity-75 transition p-2"
-                        onClick={() => router.forward()}
-                    >
-                        <RxCaretRight size={24} className="text-white" />
-                    </button>
+                <div className="hidden md:flex gap-x-8 items-center">
+                    <a href="#" className="flex-shrink-0">
+                        <img
+                            src="https://res.cloudinary.com/dqhawdcol/image/upload/v1758379129/hkyfzlvauys6paoqo6on.png"
+                            alt="Shamana"
+                            className="max-w-[180px] h-full"
+                        />
+                    </a>
                     
                     {/* Tribe and Playlist Navigation Links */}
-                    <div className="flex items-center gap-x-2 ml-4">
+                    <div className="flex items-center gap-x-6 ml-4">
+                    <nav className="flex gap-8">
+                        <button
+                            onClick={() => router.push('/')}
+                            className="font-medium relative"
+                            title="Home"
+                        >
+                            
+                            <span className="hidden sm:inline">Home</span>
+                        </button>
                         <button
                             onClick={() => router.push('/tribes')}
-                            className="flex items-center gap-x-2 px-3 py-2 rounded-md bg-neutral-800 hover:bg-neutral-700 transition text-white text-sm font-medium"
+                            className="font-medium relative"
                             title="Music Tribes"
                         >
-                            <FaUsers size={16} />
+                            
                             <span className="hidden sm:inline">Tribes</span>
                         </button>
                         <button
                             onClick={() => router.push('/playlists')}
-                            className="flex items-center gap-x-2 px-3 py-2 rounded-md bg-neutral-800 hover:bg-neutral-700 transition text-white text-sm font-medium"
+                            className="font-medium relative after:content-[''] after:absolute after:bottom-[-5px] after:left-0 after:w-full after:h-[2px] after:bg-white"
                             title="Playlists"
                         >
-                            <FaList size={16} />
+                            
                             <span className="hidden sm:inline">Playlists</span>
                         </button>
+                    </nav>
                     </div>
                 </div>
 
                 {/* Search input - centered on mobile, right on desktop */}
                 <div className="flex-1 md:flex-none md:w-80 lg:w-96 mx-4">
                     <SearchInput />
-                </div>
-
-                {/* User authentication buttons */}
-                <div className="flex items-center gap-x-3">
+                    </div>
+                    
                     {/* Upload Button */}
-                    <button
+                    <div
                         onClick={handleUpload}
-                        className="rounded-full bg-white p-2 hover:opacity-75 transition"
+                        className="flex items-center gap-2 font-medium cursor-pointer"
                         title="Upload Song"
                     >
-                        <FaUpload className="text-black text-sm" />
-                    </button>
+                        <FaUpload className="" />
+                        <span>Upload</span>  
+                    </div>
 
-                    {user ? (
+                {/* User authentication buttons */}
+                <div className="flex items-center gap-4 relative">
+                    
+
+                        {user ? (
+                            
                         <>
                             <button 
                                 onClick={() => router.push('/account')}
@@ -104,33 +124,37 @@ const Header: React.FC<HeaderProps> = ({ children, className }) => {
                             >
                                 <FaUserAlt className="text-black text-sm" />
                             </button>
-                            <Button 
-                                className="bg-white px-4 py-1 text-sm"
+                            <button 
+                                className="bg-green px-4 py-1 text-sm hover:bg-green-300"
                                 onClick={handleLogout}
                             >
                                 Logout
-                            </Button>
+                            </button>
                         </>
                     ) : (
                         <>
-                            <Button 
-                                className="bg-transparent text-neutral-300 font-medium text-sm px-2 py-1"
+                            <button 
+                                className="bg-transparent text-neutral-300 font-medium text-sm px-2 py-1 hover:bg-green-700"
                                 onClick={() => authModal.onOpen()}
                             >
                                 Sign Up
-                            </Button>
-                            <Button 
-                                className="bg-white px-4 py-1 text-sm"
+                            </button>
+                            <button 
+                                className="bg-transparent text-neutral-300 font-medium text-sm px-2 py-1 hover:bg-green-500"
                                 onClick={() => authModal.onOpen()}
                             >
                                 Log In
-                            </Button>
+                            </button>
                         </>
                     )}
                 </div>
             </div>
+            </div>
             {children}
         </div>
+
+
+        
     );
 }
  

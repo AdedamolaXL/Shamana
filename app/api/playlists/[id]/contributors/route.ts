@@ -58,8 +58,8 @@ export async function GET(request: NextRequest, context: Context) {
       if (!userContributions.has(userId)) {
         userContributions.set(userId, {
           id: userId,
-          username: contribution.user?.username || contribution.user?.email?.split('@')[0] || 'Anonymous',
-          email: contribution.user?.email || '',
+          username: (contribution.user?.[0]?.username) || (contribution.user?.[0]?.email?.split('@')[0]) || 'Anonymous',
+          email: contribution.user?.[0]?.email || '',
           is_curator: userId === playlist.user_id,
           songs_added: 0,
           songs: []
@@ -69,8 +69,8 @@ export async function GET(request: NextRequest, context: Context) {
       const userContrib = userContributions.get(userId);
       userContrib.songs_added += 1;
       userContrib.songs.push({
-        id: contribution.songs?.id,
-        title: contribution.songs?.title
+        id: contribution.songs?.[0]?.id,
+        title: contribution.songs?.[0]?.title
       });
     });
 
@@ -78,8 +78,8 @@ export async function GET(request: NextRequest, context: Context) {
     if (playlist.user_id && !userContributions.has(playlist.user_id)) {
       userContributions.set(playlist.user_id, {
         id: playlist.user_id,
-        username: playlist.user?.username || playlist.user?.email?.split('@')[0] || 'Anonymous',
-        email: playlist.user?.email || '',
+        username: playlist.user?.[0]?.username || playlist.user?.[0]?.email?.split('@')[0] || 'Anonymous',
+        email: playlist.user?.[0].email || '',
         is_curator: true,
         songs_added: 0,
         songs: []

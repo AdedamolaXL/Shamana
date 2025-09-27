@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PlaylistWithSongs, Song } from "@/types";
-import { FaMusic, FaBookmark, FaHeart, FaPlay, FaClock, FaCrown, FaPause } from "react-icons/fa";
+import { FaMusic, FaBookmark, FaHeart, FaPlay, FaClock, FaCrown, FaPause, FaGem } from "react-icons/fa";
 import toast from "react-hot-toast";
 import { useUser } from "@/hooks/useUser";
 import useOnPlay from "@/hooks/useOnPlay";
@@ -41,11 +41,24 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
   const [contributors, setContributors] = useState<Contributor[]>([]); // New state for contributors
   const [isLoadingContributors, setIsLoadingContributors] = useState(true);
   const [isPlayingPlaylist, setIsPlayingPlaylist] = useState(false);
+  const [isControllingPlaylist, setIsControllingPlaylist] = useState(false);
+  const [commentLikes, setCommentLikes] = useState<Record<number, boolean>>({});
+  const [isPulsing, setIsPulsing] = useState(true); 
+
 
   const router = useRouter();
   const { user } = useUser();
   const player = usePlayer();
   const onPlay = useOnPlay(allSongs);
+
+   useEffect(() => {
+    const pulseTimer = setTimeout(() => {
+      setIsPulsing(false);
+    }, 10000); // Stop pulsing after 10 seconds
+
+    return () => clearTimeout(pulseTimer);
+  }, []);
+  
 
    useEffect(() => {
     // Check if the current playlist is being played
@@ -54,7 +67,7 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
     );
     
     setIsPlayingPlaylist(Boolean(isPlaylistActive && player.activeId !== undefined));
-  }, [player.activeId, currentPlaylist.playlist_songs]);
+   }, [player.activeId, currentPlaylist.playlist_songs]);
 
   // Fetch contributors when component mounts
   useEffect(() => {
@@ -83,6 +96,13 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
     fetchContributors();
   }, [currentPlaylist.id]);
 
+  const handleCollectClick = () => {
+    setIsPulsing(true);
+    // Restart the timer
+    setTimeout(() => setIsPulsing(false), 10000);
+    handleSavePlaylist();
+  };
+
   const getFallbackContributors = (): Contributor[] => {
     const contributors: Contributor[] = [];
     
@@ -99,6 +119,8 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
     
     return contributors;
   };
+
+  
 
   // Check if current user has collected this playlist and get collection count
   useEffect(() => {
@@ -130,7 +152,7 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
   };
 
     // Handle playlist play/pause
-  const handlePlayPausePlaylist = () => {
+   const handlePlayPausePlaylist = () => {
     const playlistSongs = getPlaylistSongs();
     
     if (playlistSongs.length === 0) {
@@ -138,26 +160,47 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
       return;
     }
 
+    const playlistSongIds = playlistSongs.map(song => song.id);
+
     if (isPlayingPlaylist) {
       // Pause playback
-      // You might need to implement pause functionality in your player hook
-      console.log("Pausing playlist playback");
-      // For now, we'll just set the state
+      player.setIsPlaying(false);
       setIsPlayingPlaylist(false);
+      console.log("Pausing playlist playback");
+      toast("Playlist paused");
     } else {
-      // Play the playlist
-      if (playlistSongs.length > 0) {
-        // Set all playlist songs as the player queue
-        player.setIds(playlistSongs.map(song => song.id));
-        
-        // Play the first song in the playlist
-        const firstSongId = playlistSongs[0].id;
-        player.setId(firstSongId);
-        
+      // If we're already on a song from this playlist, just resume
+      if (player.activeId && playlistSongIds.includes(player.activeId)) {
+        player.setIsPlaying(true);
         setIsPlayingPlaylist(true);
+        setIsControllingPlaylist(true);
+        toast("Resuming playlist");
+      } else {
+        // Start playing the playlist from the beginning
+        player.setIds(playlistSongIds);
+        const firstSongId = playlistSongIds[0];
+        player.setId(firstSongId);
+        player.setIsPlaying(true);
+        setIsPlayingPlaylist(true);
+        setIsControllingPlaylist(true);
         toast.success(`Playing playlist: ${currentPlaylist.name}`);
       }
     }
+   };
+  
+   // Handle when user clicks on individual songs
+  const handleSongClick = (songId: string) => {
+    const playlistSongs = getPlaylistSongs();
+    const playlistSongIds = playlistSongs.map(song => song.id);
+    
+    // If this song is part of the current playlist, we're now controlling the playlist
+    if (playlistSongIds.includes(songId)) {
+      setIsControllingPlaylist(true);
+      player.setIds(playlistSongIds);
+    }
+    
+    // Play the specific song
+    onPlay(songId);
   };
 
 
@@ -533,11 +576,76 @@ const fetchCollectionCount = async () => {
     }
   };
 
+  useEffect(() => {
+    const playlistSongs = getPlaylistSongs();
+    const playlistSongIds = playlistSongs.map(song => song.id);
+    
+    // Check if the current active song is in this playlist
+    const isPlaylistActive = player.activeId && playlistSongIds.includes(player.activeId);
+    
+    // Check if the player is currently playing this playlist's songs
+    const isPlayingThisPlaylist = isPlaylistActive && player.isPlaying;
+    
+    setIsPlayingPlaylist(Boolean(isPlayingThisPlaylist));
+    
+    // If we're controlling the playlist and the active song changes to outside the playlist, stop controlling
+    if (isControllingPlaylist && player.activeId && !playlistSongIds.includes(player.activeId)) {
+      setIsControllingPlaylist(false);
+    }
+  }, [player.activeId, player.isPlaying, currentPlaylist.playlist_songs, isControllingPlaylist]);
+
+  const toggleCommentLike = (id: number) => setCommentLikes(prev => ({...prev, [id]: !prev[id]}));
+
   return (
     <div className="max-w-[1200px] mx-auto px-[15px]">
       {/* Hero Section with Actual Playlist Data */}
-      <section className="relative h-[300px] rounded-xl overflow-hidden my-10 flex items-end p-10 
-        bg-gradient-to-br from-[#6a11cb] to-[#2575fc] lg:h-[250px] lg:p-8 md:h-[200px] md:my-5 md:p-5">
+      <section className={`relative h-[300px] rounded-xl overflow-hidden my-10 flex items-end p-10 
+        bg-gradient-to-br from-[#6a11cb] to-[#2575fc] lg:h-[250px] lg:p-8 md:h-[200px] md:my-5 md:p-5
+        ${isPulsing ? 'animate-pulse-slow' : ''}`}>
+        
+        {/* CTA Button - Top Right */}
+        {!isCreator && !isCollected && (
+          <div className="absolute top-6 right-6 z-20">
+            <button 
+              onClick={handleCollectClick}
+              className="group relative bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-black font-bold py-3 px-6 rounded-full shadow-2xl transform transition-all duration-300 hover:scale-105 hover:shadow-amber-500/25 flex items-center gap-2 border-2 border-amber-300"
+            >
+              {/* Animated sparkle effect */}
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full animate-ping"></div>
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full"></div>
+              
+              <FaGem className="text-amber-700 group-hover:text-amber-800 transition-colors" />
+              <span className="whitespace-nowrap">Collect as NFT</span>
+              
+              {/* Hover tooltip */}
+              <div className="absolute bottom-full mb-2 hidden group-hover:block bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                Own this playlist forever! 🎵
+              </div>
+            </button>
+          </div>
+        )}
+
+        {/* Collection Badge - If already collected */}
+        {isCollected && (
+          <div className="absolute top-6 right-6 z-20">
+            <div className="bg-gradient-to-r from-green-400 to-emerald-500 text-white font-bold py-3 px-6 rounded-full shadow-lg flex items-center gap-2 border-2 border-emerald-300">
+              <FaGem className="text-white" />
+              <span className="whitespace-nowrap">Collected ✓</span>
+            </div>
+          </div>
+        )}
+
+        {/* Curator Badge - If user is creator */}
+        {isCreator && (
+          <div className="absolute top-6 right-6 z-20">
+            <div className="bg-gradient-to-r from-purple-400 to-pink-500 text-white font-bold py-3 px-6 rounded-full shadow-lg flex items-center gap-2 border-2 border-pink-300">
+              <FaCrown className="text-white" />
+              <span className="whitespace-nowrap">Your Creation</span>
+            </div>
+          </div>
+        )}
+
+        {/* Existing banner content */}
         <div className="relative z-10 w-full">
           <h1 className="text-4xl font-bold mb-2 md:text-3xl">{currentPlaylist.name}</h1>
           <p className="text-lg mb-5 opacity-90 max-w-[600px] md:text-base">
@@ -552,12 +660,8 @@ const fetchCollectionCount = async () => {
               <i className="fas fa-clock"></i>
               <span>{calculateDuration()}</span>
             </div>
-            {/* <div className="flex items-center gap-1">
-              <i className="fas fa-play"></i>
-              <span>0 plays</span>
-            </div> */}
             <div className="flex items-center gap-2">
-              <FaBookmark className="text-sm" />
+              <FaGem className="text-sm" />
               <span>{collectionCount} collectors</span>
             </div>
             <div className="flex items-center gap-1">
@@ -568,6 +672,11 @@ const fetchCollectionCount = async () => {
             </div>
           </div>
         </div>
+
+        {/* Animated overlay for pulsing effect */}
+        {isPulsing && (
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer rounded-xl"></div>
+        )}
       </section>
 
       <section className="flex gap-8 mb-14 flex-col lg:flex-row">
@@ -592,7 +701,7 @@ const fetchCollectionCount = async () => {
                   isPlayingPlaylist 
                     ? ' text-white hover:bg-green-600' 
                     : ' text-white hover:bg-[#7a2bdb]'
-                }`}
+                } ${getPlaylistSongs().length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`} 
                 onClick={handlePlayPausePlaylist}
                 disabled={getPlaylistSongs().length === 0}>
                 {isPlayingPlaylist ? (
@@ -673,7 +782,9 @@ const fetchCollectionCount = async () => {
             {/* Song List */}
             <div className="flex flex-col">
               {currentPlaylist.playlist_songs?.map((playlistSong, index) => (
-                <div key={playlistSong.songs.id} className="flex items-center gap-4 py-3 px-2 cursor-pointer border-b border-[#222] hover:bg-[#1a1a1a] transition">
+                <div key={playlistSong.songs.id} className="flex items-center gap-4 py-3 px-2 cursor-pointer border-b border-[#222] hover:bg-[#1a1a1a] transition"
+                onClick={() => handleSongClick(playlistSong.songs.id)}
+                >
                   <span className="w-6 text-sm text-gray-400">{index + 1}</span>
                   <div className="flex-1">
                     <div className="text-sm font-medium">{playlistSong.songs.title}</div>
@@ -700,20 +811,58 @@ const fetchCollectionCount = async () => {
             </div>
 
             {/* Comments Section */}
-            <div className="mt-6 border-t border-[#222] pt-5">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-[1.2rem] font-semibold">Comments</h3>
-                <select className="bg-transparent border border-[#333] text-[#ccc] px-3 py-1 rounded-[15px] text-[0.8rem] cursor-pointer">
-                  <option>Newest first</option>
-                  <option>Most liked</option>
-                </select>
-              </div>
-              
-              {/* Placeholder comments - you might want to fetch real comments */}
-              <div className="text-center py-4 text-gray-400">
-                <p>No comments yet. Be the first to comment!</p>
-              </div>
-            </div>
+            <div className="comments-section mt-10">
+  {/* Header */}
+  <div className="comments-header flex items-center justify-between mb-5">
+    <h3 className="comments-title text-xl font-semibold">Comments</h3>
+    <select className="comments-filter bg-[#222] border-0 rounded px-3 py-1 text-sm text-white">
+      <option>Newest first</option>
+      <option>Most liked</option>
+    </select>
+  </div>
+
+  {/* Comments */}
+  {[
+    {id:1, name:'Sarah Chen', time:'2 hours ago', text:'This playlist is absolutely fire! The transition between tracks is seamless.', likes:24},
+    {id:2, name:'Marcus Brown', time:'5 hours ago', text:'Needs more songs. Otherwise solid playlist.', likes:12},
+    {id:3, name:'Jamal Williams', time:'1 day ago', text:'Discovered so many new artists from this playlist.', likes:42},
+    {id:4, name:'Elena Rodriguez', time:'2 days ago', text:'The sequencing is perfect! Love how each track flows into the next.', likes:31}
+  ].map(comment => (
+    <div key={comment.id} className="comment flex gap-3 mb-6">
+      {/* Avatar */}
+      <img
+        src="https://res.cloudinary.com/dqhawdcol/image/upload/v1758202400/e9ifs1tewfgemgxfc5kc.jpg"
+        alt="User"
+        className="comment-avatar w-10 h-10 rounded-full object-cover shrink-0"
+      />
+      {/* Content */}
+      <div className="comment-content flex-1">
+        <div className="comment-header flex items-center gap-2 mb-1">
+          <span className="commenter-name font-semibold">{comment.name}</span>
+          <span className="comment-time text-xs text-gray-400">{comment.time}</span>
+        </div>
+        <p className="comment-text text-sm mb-2">{comment.text}</p>
+        <div className="comment-actions flex gap-4 text-sm text-gray-400">
+          <button
+            className={`comment-action flex items-center gap-1 transition-colors hover:text-white ${
+              commentLikes[comment.id] ? 'text-[#6a11cb]' : ''
+            }`}
+            onClick={() => toggleCommentLike(comment.id)}
+          >
+            <i className={`${commentLikes[comment.id] ? 'fas' : 'far'} fa-heart`} />
+            <span>{comment.likes + (commentLikes[comment.id] ? 1 : 0)}</span>
+          </button>
+          <button className="comment-action flex items-center gap-1 transition-colors hover:text-white">
+            <i className="far fa-comment" />
+            <span>Reply</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
+
+
           </div>
         </div>
 

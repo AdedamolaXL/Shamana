@@ -120,24 +120,19 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
             <div className="flex w-full justify-start">
                 <div className="flex items-center gap-x-4">
                     <MediaItem data={song}/>
-                    <LikeButton songId={song.id}/>
                 </div>
             </div>
-            <div className="flex md:hidden col-auto w-full justify-end items-center">
-                <div onClick={handlePlay} className="h-10 w-10 flex items-center justify-center rounded-full bg-white p-1 cursor-pointer">
-                    <Icon size={30} className="text-black"/>
-                </div>
-            </div>
+            
             <div className="hidden h-full md:flex justify-center items-center w-full max-w-[722px] gap-x-6">
-                <AiFillStepBackward size={30} className="text-neutral-400 cursor-pointer hover:text-white transition" onClick={onPlayPrevious}/>
+                <AiFillStepBackward size={20} className="text-neutral-400 cursor-pointer hover:text-white transition" onClick={onPlayPrevious}/>
                 <div onClick={handlePlay} className="flex items-center justify-center h-10 w-10 rounded-full bg-white p-1 cursor-pointer">
-                    <Icon size={30} className="text-black"/>
+                    <Icon size={20} className="text-black"/>
                 </div>
-                <AiFillStepForward size={30} className="text-neutral-400 cursor-pointer hover:text-white transition" onClick={onPlayNext}/>
+                <AiFillStepForward size={20} className="text-neutral-400 cursor-pointer hover:text-white transition" onClick={onPlayNext}/>
             </div>
-            <div className="hidden md:flex w-full justify-end pr-2">
+            <div className="flex items-center gap-2 ml-4">
                 <div className="flex items-center gap-x-2 w-[120px]">
-                    <VolumeIcon size={34} className="cursor-pointer" onClick={toggleMute}/>
+                    <VolumeIcon size={20} className="text-gray-400 w-20 accent-white" onClick={toggleMute}/>
                     <Slider value={volume} onChange={(value) => setVolume(value)}/>
                 </div>
             </div>

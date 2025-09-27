@@ -22,7 +22,7 @@ const SearchInput = () => {
         <form onSubmit={handleSubmit} className="relative w-full">
             <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-neutral-400 z-10" size={18} />
             <Input 
-                placeholder="What do you want to listen to?" 
+                placeholder="Search..." 
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 className="search-input pl-12 pr-4 py-3 bg-neutral-800 border border-neutral-700 focus:bg-neutral-900 focus:border-green-500 rounded-full text-white placeholder-neutral-400"
