@@ -25,7 +25,7 @@ async function createPlaylistTokens() {
     // Create the NFT token
     const nftCreate = new TokenCreateTransaction()
       .setTokenName("Playlist NFTs")
-      .setTokenSymbol("PLST")
+      .setTokenSymbol("sham")
       .setTokenType(TokenType.NonFungibleUnique)
       .setDecimals(0)
       .setInitialSupply(0)
@@ -49,8 +49,8 @@ async function createPlaylistTokens() {
 
     // Create the Fungible Token for rewards
     const ftCreate = new TokenCreateTransaction()
-      .setTokenName("Playlist Points")
-      .setTokenSymbol("POINTS")
+      .setTokenName("Playlist Mana")
+      .setTokenSymbol("mana")
       .setTokenType(TokenType.FungibleCommon)
       .setDecimals(0)
       .setInitialSupply(1000000) // 1 million initial supply

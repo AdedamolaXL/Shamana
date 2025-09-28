@@ -1,10 +1,11 @@
-// app/api/token/mint/route.ts
 import { NextResponse } from "next/server";
-import { mintFungible, activateAndGetRecipientAccount } from "@/lib/hedera-tokens";
+import { mintFungible } from "@/lib/hedera-tokens";
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
   try {
-    const { userId, tokenId, amount } = await req.json();
+    const { userId, tokenId, amount, playlistId, claimType } = await req.json();
 
     if (!userId || !tokenId || !amount) {
       return NextResponse.json(
@@ -13,17 +14,54 @@ export async function POST(req: Request) {
       );
     }
 
-    // Ensure recipient account exists
-    const recipientAccount = await activateAndGetRecipientAccount(userId);
-    const recipientAccountId =
-      typeof recipientAccount === "string"
-        ? recipientAccount
-        : recipientAccount.accountId;
+    const supabase = createRouteHandlerClient({ cookies });
 
+    // Get recipient's Hedera account from database (should exist from signup)
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('hedera_account_id')
+      .eq('id', userId)
+      .single();
+
+    if (userError || !user?.hedera_account_id) {
+      return NextResponse.json(
+        { error: "User does not have a Hedera account. Please contact support." },
+        { status: 400 }
+      );
+    }
+
+    const recipientAccountId = user.hedera_account_id;
+    console.log(`Minting ${amount} tokens for account: ${recipientAccountId}`);
+
+    // Mint and transfer fungible tokens
     const result = await mintFungible(tokenId, amount, recipientAccountId);
 
-    return NextResponse.json({ success: true, ...result });
+    // Record the minting transaction if it's for playlist earnings
+    if (playlistId && claimType === 'earnings') {
+      const { error: insertError } = await supabase
+        .from('token_mints')
+        .insert({
+          user_id: userId,
+          playlist_id: playlistId,
+          amount: amount,
+          token_id: tokenId,
+          transaction_id: result.transactionId,
+          minted_at: new Date().toISOString()
+        });
+
+      if (insertError) {
+        console.error('Failed to record token mint:', insertError);
+        // Don't fail the entire request since the tokens were successfully minted
+      }
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      ...result,
+      recipientAccountId 
+    });
   } catch (err: any) {
+    console.error("Token minting error:", err);
     return NextResponse.json(
       { error: err.message || "Token mint failed" },
       { status: 500 }

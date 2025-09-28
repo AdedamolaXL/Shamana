@@ -5,22 +5,14 @@ import {
   AccountId,
   TokenId,
   PrivateKey,
-  TokenInfoQuery,
-  Hbar
 } from "@hashgraph/sdk";
 import { initializeHederaClient } from "@/scripts/hedera-utils";
-import { activateHederaAccount } from "@/lib/hedera-account";
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
 
 export function initHedera() {
   const { client, operatorId, operatorKey } = initializeHederaClient();
   return { client, operatorId, operatorKey };
-}
-
-/**
- * Ensures the user has an active Hedera account.
- */
-export async function activateAndGetRecipientAccount(userId: string) {
-  return await activateHederaAccount(userId);
 }
 
 /**
@@ -33,124 +25,119 @@ export async function mintFungible(
 ) {
   const { client, operatorId, operatorKey } = initHedera();
 
-  // Mint fungible tokens
-  const mintTx = new TokenMintTransaction()
-    .setTokenId(TokenId.fromString(tokenId))
-    .setAmount(amount)
-    .freezeWith(client);
+  try {
+    // Mint fungible tokens
+    const mintTx = new TokenMintTransaction()
+      .setTokenId(TokenId.fromString(tokenId))
+      .setAmount(amount)
+      .freezeWith(client);
 
-  const mintSigned = await mintTx.sign(operatorKey);
-  const mintSubmit = await mintSigned.execute(client);
-  const mintReceipt = await mintSubmit.getReceipt(client);
+    const mintSigned = await mintTx.sign(operatorKey);
+    const mintSubmit = await mintSigned.execute(client);
+    const mintReceipt = await mintSubmit.getReceipt(client);
 
-  // Transfer to recipient
-  const transferTx = new TransferTransaction()
-    .addTokenTransfer(tokenId, operatorId, -amount)
-    .addTokenTransfer(tokenId, recipientAccountId, amount)
-    .freezeWith(client);
+    // Transfer to recipient
+    const transferTx = new TransferTransaction()
+      .addTokenTransfer(tokenId, operatorId, -amount)
+      .addTokenTransfer(tokenId, recipientAccountId, amount)
+      .freezeWith(client);
 
-  const transferSigned = await transferTx.sign(operatorKey);
-  const transferSubmit = await transferSigned.execute(client);
-  const transferReceipt = await transferSubmit.getReceipt(client);
+    const transferSigned = await transferTx.sign(operatorKey);
+    const transferSubmit = await transferSigned.execute(client);
+    const transferReceipt = await transferSubmit.getReceipt(client);
 
-  return {
-    amount,
-    tokenId,
-    recipientAccountId,
-    transactionId: transferSubmit.transactionId.toString(),
-    mintStatus: mintReceipt.status.toString(),
-    transferStatus: transferReceipt.status.toString(),
-  };
+    return {
+      amount,
+      tokenId,
+      recipientAccountId,
+      transactionId: transferSubmit.transactionId.toString(),
+      mintStatus: mintReceipt.status.toString(),
+      transferStatus: transferReceipt.status.toString(),
+    };
+  } finally {
+    await client.close();
+  }
 }
 
 /**
- * Mint NFTs with metadata and optionally transfer to recipient.
+ * Mint NFTs with metadata and transfer to recipient (auto-association enabled).
  */
 export async function mintNft(
   tokenId: string,
   metadataArray: Buffer[],
-  recipientAccountId?: string
+  recipientUserId: string // UUID from Supabase
 ) {
   const { client, operatorId, operatorKey } = initHedera();
 
   try {
-    console.log('🔧 Starting NFT mint process...');
-    console.log('Operator:', operatorId.toString());
-    console.log('Token ID:', tokenId);
-    console.log('Recipient:', recipientAccountId || 'Using treasury');
+    console.log("🔧 Starting NFT mint process...");
 
-    // Get the supply key from environment variables
     const supplyKeyString = process.env.HEDERA_SUPPLY_KEY;
     if (!supplyKeyString) {
-      throw new Error('HEDERA_NFT_SUPPLY_KEY environment variable is required');
+      throw new Error("HEDERA_SUPPLY_KEY env var not set");
     }
-
     const supplyKey = PrivateKey.fromStringDer(supplyKeyString);
-    console.log('✅ Supply key loaded');
 
-    // Verify the token exists
-    const tokenInfo = await new TokenInfoQuery()
-      .setTokenId(TokenId.fromString(tokenId))
-      .execute(client);
-    
-    console.log('✅ Token verified:', {
-      name: tokenInfo.name,
-      symbol: tokenInfo.symbol,
-      treasury: tokenInfo.treasuryAccountId?.toString()
-    });
+    const tokenIdObj = TokenId.fromString(tokenId);
+    const operatorIdObj = AccountId.fromString(operatorId.toString());
 
-    // Create mint transaction - sign with BOTH operator key AND supply key
-    const mintTx = await new TokenMintTransaction()
-      .setTokenId(TokenId.fromString(tokenId))
+    // --- MINT NFT ---
+    const mintTx = new TokenMintTransaction()
+      .setTokenId(tokenIdObj)
       .setMetadata(metadataArray)
       .freezeWith(client);
 
-    // Sign with both operator key (as payer) and supply key (as minter)
     const mintSigned = await (await mintTx.sign(operatorKey)).sign(supplyKey);
     const mintSubmit = await mintSigned.execute(client);
     const mintReceipt = await mintSubmit.getReceipt(client);
 
-    console.log('✅ Mint successful. Status:', mintReceipt.status.toString());
-    console.log('Serial numbers:', mintReceipt.serials.map(s => s.toString()));
+    console.log("✅ Mint successful. Status:", mintReceipt.status.toString());
 
-    // Transfer to recipient if specified
-    if (recipientAccountId && mintReceipt.serials.length > 0) {
-      console.log('🔄 Transferring NFT to recipient...');
+    let transferResult = null;
 
-    for (const s of mintReceipt.serials) {
-      const serial = s.toNumber();
-      
-      const transferTx = await new TransferTransaction()
-      .addNftTransfer(
-      tokenId, // ensure proper type
-      serial,
-      operatorId.toString(),
-      AccountId.fromString(recipientAccountId)
-    )
-    .freezeWith(client)
-        .sign(operatorKey);
-      
-       const transferSubmit = await transferTx.execute(client);
+    if (mintReceipt.serials.length > 0) {
+      const serialNumber = mintReceipt.serials[0].low;
+
+      // --- LOOK UP recipient Hedera account from DB ---
+      const supabase = createServerComponentClient({ cookies });
+      const { data: user, error } = await supabase
+        .from("users")
+        .select("hedera_account_id")
+        .eq("id", recipientUserId)
+        .single();
+
+      if (error) throw error;
+      if (!user?.hedera_account_id) {
+        throw new Error("Recipient has no Hedera account ID");
+      }
+
+      const recipientIdObj = AccountId.fromString(user.hedera_account_id);
+
+      // --- TRANSFER ---
+      const transferTx = new TransferTransaction()
+        .addNftTransfer(tokenIdObj, serialNumber, operatorIdObj, recipientIdObj)
+        .freezeWith(client);
+
+      const transferSigned = await transferTx.sign(operatorKey); // only operator needed
+      const transferSubmit = await transferSigned.execute(client);
       const transferReceipt = await transferSubmit.getReceipt(client);
-      
-      console.log('✅ Transfer successful. Status:', transferReceipt.status.toString());
-    }
 
-    }
-      
-   
+      console.log("✅ NFT transfer status:", transferReceipt.status.toString());
 
-     
+      transferResult = {
+        transactionId: transferSubmit.transactionId.toString(),
+        status: transferReceipt.status.toString(),
+        serialNumber,
+      };
+    }
 
     return {
-      tokenId,
+      tokenId: tokenIdObj.toString(),
       serials: mintReceipt.serials.map((s) => s.toString()),
       mintStatus: mintReceipt.status.toString(),
       transactionId: mintSubmit.transactionId.toString(),
+      transferResult,
     };
-  } catch (error) {
-    console.error('❌ NFT minting failed:', error);
-    throw error;
   } finally {
     await client.close();
   }

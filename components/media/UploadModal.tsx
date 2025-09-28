@@ -163,7 +163,8 @@ if (!songsAccessible || !imagesAccessible) {
                     title: values.title,
                     author: values.author,
                     image_path: imageData.path,
-                    song_path: songData.path
+                    song_path: songData.path,
+                    duration
                 });
 
             if (supabaseError) {

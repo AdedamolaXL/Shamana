@@ -6,6 +6,7 @@ import { ThemeSupa } from "@supabase/auth-ui-shared"
 import { useEffect, useState } from "react";
 import useAuthModal from "@/hooks/useAuthModal";
 import { Modal } from "../ui"
+import toast from "react-hot-toast";
 
 const AuthModal = () => {
     const supabaseClient = useSupabaseClient();
@@ -37,65 +38,77 @@ const AuthModal = () => {
 
                 setIsInitializing(true);
                 try {
-                    console.log('Initializing user:', session.user.id);
+                    console.log('Starting user initialization for:', session.user.id);
                     
-                    // Check if user already has a DID and username
-                    const { data: existingUser, error: fetchError } = await supabaseClient
-                        .from('users')
-                        .select('hedera_did, username')
-                        .eq('id', session.user.id)
-                        .single();
+                    // Step 1: Initialize user with username
+                    console.log('Step 1: Setting username...');
+                    const initResponse = await fetch('/api/user/init', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ userId: session.user.id }),
+                    });
 
-                    if (fetchError && fetchError.code !== 'PGRST116') {
-                        console.error('Error checking user:', fetchError);
+                    if (!initResponse.ok) {
+                        const errorText = await initResponse.text();
+                        throw new Error(`Failed to initialize user: ${errorText}`);
+                    }
+                    console.log('✅ Username set successfully');
+
+                    // Step 2: Activate Hedera account with 50 HBAR
+                    console.log('Step 2: Activating Hedera account...');
+                    const walletResponse = await fetch('/api/wallet/activate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ amount: 50 }), // Increased to 50 HBAR
+                    });
+
+                    if (!walletResponse.ok) {
+                        const errorText = await walletResponse.text();
+                        console.warn('Wallet activation warning:', errorText);
+                        // Continue with DID creation even if wallet activation has issues
+                    } else {
+                        console.log('✅ Hedera account activated successfully');
                     }
 
-                    // Only initialize if user doesn't have DID or username
-                    if (!existingUser?.hedera_did || !existingUser?.username) {
-                        // Initialize user (set username)
-                        const initResponse = await fetch('/api/user/init', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ userId: session.user.id }),
-                        });
+                    // Step 3: Create DID (wait a bit to ensure account is ready)
+                    console.log('Step 3: Creating DID...');
+                    await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+                    
+                    const didResponse = await fetch('/api/did/create', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ 
+                            userId: session.user.id, 
+                            userEmail: session.user.email || '' 
+                        }),
+                    });
 
-                        if (!initResponse.ok) {
-                            throw new Error('Failed to initialize user');
-                        }
-
-                        // Create DID (separate call)
-                        const didResponse = await fetch('/api/did/create', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ 
-                                userId: session.user.id, 
-                                userEmail: session.user.email || '' 
-                            }),
-                        });
-
-                        if (!didResponse.ok) {
-                            console.warn('DID creation failed:', await didResponse.text());
-                        } else {
-                            const didData = await didResponse.json();
-                            if (didData.alreadyExists) {
-                                console.log('DID already existed for user:', session.user.id);
-                            } else {
-                                console.log('DID created successfully for user:', session.user.id);
-                            }
-                        }
+                    if (!didResponse.ok) {
+                        const errorText = await didResponse.text();
+                        console.warn('DID creation warning:', errorText);
+                        // Don't throw error - user can still use the app without DID
                     } else {
-                        console.log('User already has DID and username:', session.user.id);
+                        const didData = await didResponse.json();
+                        if (didData.alreadyExists) {
+                            console.log('DID already existed for user:', session.user.id);
+                        } else {
+                            console.log('✅ DID created successfully for user:', session.user.id);
+                        }
                     }
 
                     // Mark this user as initialized
                     setInitializedUsers(prev => new Set(prev).add(session.user.id));
+                    console.log('✅ User initialization completed successfully');
                     
                 } catch (error) {
                     console.error('Error in user initialization:', error);
+                    toast.error('Failed to complete user setup. Some features may not work.');
                 } finally {
                     setIsInitializing(false);
                 }
@@ -103,14 +116,14 @@ const AuthModal = () => {
         };
 
         initializeUser();
-    }, [session, isInitializing, initializedUsers, supabaseClient]);
+    }, [session, isInitializing, initializedUsers]);
 
     useEffect(() => {
-  return () => {
-    // Clear initialized users when component unmounts
-    setInitializedUsers(new Set());
-  };
-}, []);
+        return () => {
+            // Clear initialized users when component unmounts
+            setInitializedUsers(new Set());
+        };
+    }, []);
 
     return (
         <Modal 

@@ -21,8 +21,16 @@ export async function POST(request: NextRequest) {
     
     const { amount } = await request.json();
     
-    // Activate the user's Hedera account using the consolidated function
+    // Activate the user's Hedera account using the corrected function
     const result = await activateHederaAccount(session.user.id, amount || 10);
+    
+    // Validate the account ID format
+    if (result.accountId && !isValidHederaAccountId(result.accountId)) {
+      return NextResponse.json(
+        { error: 'Invalid account ID format generated' },
+        { status: 500 }
+      );
+    }
     
     return NextResponse.json(result);
   } catch (error) {
@@ -32,4 +40,9 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+function isValidHederaAccountId(accountId: string): boolean {
+  const regex = /^0\.0\.\d+$/;
+  return regex.test(accountId);
 }

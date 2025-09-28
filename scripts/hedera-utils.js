@@ -46,15 +46,27 @@ function getOperator() {
 }
 
 // Initialize Hedera client
-function initializeHederaClient() {
-  loadEnvVariables();
+export function initializeHederaClient() {
+  const operatorId = process.env.HEDERA_OPERATOR_ID;
+  const operatorKey = process.env.HEDERA_OPERATOR_KEY;
+
+  if (!operatorId || !operatorKey) {
+    throw new Error('Hedera operator credentials not configured');
+  }
+
+  const client = Client.forTestnet();
   
-  const { operatorId, operatorKey } = getOperator();
+  // Convert to AccountId and PrivateKey objects
+  const operatorIdObj = AccountId.fromString(operatorId);
+  const operatorKeyObj = PrivateKey.fromStringDer(operatorKey);
   
-  const client = Client.forTestnet().setOperator(operatorId, operatorKey);
-  client.setDefaultMaxTransactionFee(new Hbar(20));
-  
-  return { client, operatorId, operatorKey };
+  client.setOperator(operatorIdObj, operatorKeyObj);
+
+  return {
+    client,
+    operatorId: operatorIdObj, // Return as AccountId object
+    operatorKey: operatorKeyObj // Return as PrivateKey object
+  };
 }
 
 // Validate environment variables

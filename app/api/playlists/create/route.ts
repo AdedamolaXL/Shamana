@@ -1,158 +1,125 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import { uploadToIPFS } from '@/lib/ipfs';
-import { activateAndGetRecipientAccount } from "@/lib/hedera-tokens";
+import { NextRequest, NextResponse } from "next/server";
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
+import { uploadToIPFS } from "@/lib/ipfs";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('Playlist creation API called');
+    console.log("🎵 Playlist creation API called");
+
     const supabase = createRouteHandlerClient({ cookies });
     const { name, description } = await request.json();
-    
+
     // Get the current session
     const { data: { session } } = await supabase.auth.getSession();
-    
     if (!session) {
-      console.log('No session found');
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log('Creating playlist for user:', session.user.id);
-    
-    // ✅ ACTIVATE CREATOR'S HEDERA ACCOUNT FIRST
-    console.log(`Activating Hedera account for creator: ${session.user.id}`);
-    let creatorAccount;
-    try {
-      creatorAccount = await activateAndGetRecipientAccount(session.user.id);
-      console.log('Creator account activation result:', creatorAccount);
-    } catch (activationError) {
-      console.error('Failed to activate creator Hedera account:', activationError);
-      const errorMessage =
-        activationError && typeof activationError === 'object' && 'message' in activationError
-          ? `Failed to activate Hedera account: ${(activationError as { message: string }).message}`
-          : 'Failed to activate Hedera account: Unknown error';
-      return NextResponse.json(
-        { error: errorMessage },
-        { status: 500 }
-      );
-    }
+    console.log("Creating playlist for user (UUID):", session.user.id);
 
-    // Create the playlist
-    const { data, error } = await supabase
-      .from('playlists')
+    // --- Create playlist row ---
+    const { data: newPlaylist, error } = await supabase
+      .from("playlists")
       .insert({
         user_id: session.user.id,
         name,
-        description: description || null
+        description: description || null,
       })
       .select()
       .single();
 
     if (error) {
-      console.error('Playlist creation error:', error);
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
+      console.error("Playlist creation error:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    console.log("✅ Playlist created with ID:", newPlaylist.id);
 
-    console.log('Playlist created with ID:', data.id);
-    console.log('Calling NFT mint API...');
-
+    // --- Mint NFT if token configured ---
     const tokenId = process.env.HEDERA_NFT_TOKEN_ID;
-if (!tokenId) {
-  console.error('HEDERA_NFT_TOKEN_ID is not set');
-  // Continue without NFT rather than failing completely
-  return NextResponse.json(data);
-}
-    
-  const playlistMetadata = {
-  name,
-  description: description || `A playlist created by ${session.user.email}`,
-  image: "", 
-  attributes: [
-    { trait_type: "Creator", value: session.user.id },
-    { trait_type: "Playlist Type", value: "User Created" },
-    { trait_type: "Song Count", value: 0 },
-  ],
-  };
-    
+    if (!tokenId) {
+      console.warn("HEDERA_NFT_TOKEN_ID not set → skipping NFT mint");
+      return NextResponse.json(newPlaylist);
+    }
+
+    // Playlist metadata for NFT
+    const playlistMetadata = {
+      name,
+      description: description || `A playlist created by ${session.user.email}`,
+      attributes: [
+        { trait_type: "Creator", value: session.user.id },
+        { trait_type: "Playlist Type", value: "User Created" },
+        { trait_type: "Song Count", value: 0 },
+      ],
+    };
+
+    // Upload metadata to IPFS
     const ipfsHash = await uploadToIPFS(playlistMetadata);
-const metadataUri = `ipfs://${ipfsHash}`; 
+    const metadataUri = `ipfs://${ipfsHash}`;
 
-    // Mint NFT for the playlist
-  const nftResponse = await fetch(new URL("/api/nft/mint", request.url).toString(), {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    userId: session.user.id,
-    tokenId: tokenId,
-    metadata: metadataUri, // 👈 just the URI
-  }),
-});
+    console.log("Calling NFT mint API...");
+    let nftResponse;
+    try {
+      nftResponse = await fetch(
+        new URL("/api/nft/mint", request.url).toString(),
+        {
+          method: "POST",
+          headers: {
+      "Content-Type": "application/json",
+      Cookie: request.headers.get("cookie") || "", // 👈 forward auth cookies
+    },
+          body: JSON.stringify({
+            playlistId: newPlaylist.id,
+            metadataUri,
+            userId: session.user.id, // UUID
+          }),
+        }
+      );
+    } catch (err) {
+      console.error("Failed to reach NFT mint API:", err);
+      return NextResponse.json(newPlaylist);
+    }
 
-    console.log('NFT API response status:', nftResponse.status);
-    
     const nftData = await nftResponse.json();
-    console.log('NFT API response data:', nftData);
+    console.log("NFT API response:", nftData);
 
-    if (!nftData.success) {
-      console.error('NFT minting failed:', nftData.error);
-      // Continue without NFT rather than failing completely
-      return NextResponse.json(data);
-    }
+    if (nftResponse.ok && nftData.success && nftData.nftResult) {
+      // --- Update playlist with NFT info ---
+      await supabase
+        .from("playlists")
+        .update({
+          nft_token_id: nftData.nftResult.tokenId,
+          nft_serial_number: nftData.nftResult.serials[0],
+          nft_metadata_uri: metadataUri,
+        })
+        .eq("id", newPlaylist.id);
 
-    // Update playlist with NFT information
-    const { error: updateError } = await supabase
-      .from('playlists')
-      .update({
-        nft_token_id: nftData.tokenId,
-        nft_serial_number: nftData.serialNumber,
-        nft_metadata_uri: nftData.metadataUri
-      })
-      .eq('id', data.id);
-
-    if (updateError) {
-      console.error('Failed to update playlist with NFT info:', updateError);
-    }
-
-        console.log('Creating collection record for creator...');
-    const { error: collectionError } = await supabase
-      .from('playlist_collections')
-      .insert({
-        playlist_id: data.id,
+      // --- Add to creator’s collection ---
+      await supabase.from("playlist_collections").insert({
+        playlist_id: newPlaylist.id,
         user_id: session.user.id,
-        nft_token_id: nftData.tokenId,
-        nft_serial_number: nftData.serialNumber,
-        nft_metadata_uri: nftData.metadataUri,
-        collected_at: new Date().toISOString()
+        nft_token_id: nftData.nftResult.tokenId,
+        nft_serial_number: nftData.nftResult.serials[0],
+        nft_metadata_uri: metadataUri,
+        collected_at: new Date().toISOString(),
       });
 
-    if (collectionError) {
-      console.error('Failed to create creator collection record:', collectionError);
-    } else {
-      console.log('Creator collection record created successfully');
+      console.log("🎉 Playlist + NFT minted successfully");
+      return NextResponse.json({
+        ...newPlaylist,
+        nft_token_id: nftData.nftResult.tokenId,
+        nft_serial_number: nftData.nftResult.serials[0],
+        nft_metadata_uri: metadataUri,
+      });
     }
 
-    console.log('Playlist created with NFT successfully');
-    return NextResponse.json({
-      ...data,
-      nft_token_id: nftData.tokenId,
-      nft_serial_number: nftData.serialNumber,
-      nft_metadata_uri: nftData.metadataUri
-    });
-  } catch (error) {
-    console.error('Playlist creation error:', error);
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 }
-    );
+    console.warn("NFT minting failed, returning playlist without NFT");
+    return NextResponse.json(newPlaylist);
+  } catch (error: any) {
+    console.error("Playlist creation error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

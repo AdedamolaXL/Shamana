@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { mintNft, activateAndGetRecipientAccount } from "@/lib/hedera-tokens";
+import { mintNft } from "@/lib/hedera-tokens";
 import { uploadToIPFS } from "@/lib/ipfs";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
@@ -63,28 +63,21 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ ACTIVATE USER'S HEDERA ACCOUNT BEFORE MINTING
-    console.log(`Activating Hedera account for user: ${userId}`);
-    let recipientAccount;
-    try {
-      recipientAccount = await activateAndGetRecipientAccount(userId);
-      console.log('Account activation result:', recipientAccount);
-    } catch (activationError) {
-      console.error('Failed to activate Hedera account:', activationError);
-      const errorMessage = (activationError && typeof activationError === "object" && "message" in activationError)
-        ? (activationError as { message: string }).message
-        : String(activationError);
+    // Verify user has a Hedera account (should exist from signup)
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('hedera_account_id')
+      .eq('id', userId)
+      .single();
+
+    if (userError || !user?.hedera_account_id) {
       return NextResponse.json(
-        { error: `Failed to activate Hedera account: ${errorMessage}` },
-        { status: 500 }
+        { error: "User does not have a Hedera account. Please contact support." },
+        { status: 400 }
       );
     }
 
-    const recipientAccountId = typeof recipientAccount === "string" 
-      ? recipientAccount 
-      : recipientAccount.accountId;
-
-    console.log(`Using recipient account: ${recipientAccountId}`);
+    console.log(`Using recipient account: ${user.hedera_account_id}`);
 
     // Create COLLECTOR-specific metadata
     const metadata = {
@@ -127,6 +120,7 @@ export async function POST(req: Request) {
     });
 
     // Check if metadata exceeds 100 bytes
+    let finalMetadata = minimalMetadata;
     if (Buffer.byteLength(minimalMetadata, 'utf8') > 100) {
       // If still too long, use just the IPFS hash
       const fallbackMetadata = JSON.stringify({
@@ -136,20 +130,31 @@ export async function POST(req: Request) {
       
       if (Buffer.byteLength(fallbackMetadata, 'utf8') > 100) {
         // Last resort: just the IPFS hash as a string (no JSON)
-        const finalMetadata = metadataCid;
+        finalMetadata = metadataCid;
         if (Buffer.byteLength(finalMetadata, 'utf8') > 100) {
           throw new Error("Metadata too large even after compression");
         }
+      } else {
+        finalMetadata = fallbackMetadata;
       }
     }
 
-    // Mint COLLECTOR NFT
+    // Mint COLLECTOR NFT using the updated mintNft function
     const tokenId = process.env.HEDERA_NFT_TOKEN_ID;
     if (!tokenId) {
       throw new Error("NFT token ID not configured");
     }
 
-    const result = await mintNft(tokenId, [Buffer.from(minimalMetadata)], recipientAccountId);
+    console.log('Minting NFT for collector...');
+    const result = await mintNft(tokenId, [Buffer.from(finalMetadata)], userId);
+
+    if (!result.transferResult || result.transferResult.status !== 'SUCCESS') {
+      console.error('NFT transfer failed:', result.transferResult);
+      return NextResponse.json(
+        { error: `NFT minting succeeded but transfer failed: status: ${result.transferResult ? result.transferResult.status : 'UNKNOWN'}` },
+        { status: 500 }
+      );
+    }
 
     // Record the collection in database
     const { error: collectionError } = await supabase
@@ -159,19 +164,21 @@ export async function POST(req: Request) {
         user_id: userId,
         nft_token_id: result.tokenId,
         nft_serial_number: result.serials[0],
+        nft_metadata_uri: metadataUri,
         collected_at: new Date().toISOString()
       });
 
     if (collectionError) {
       console.error("Failed to record collection:", collectionError);
+      // Don't fail the entire request since the NFT was successfully minted
     }
 
     return NextResponse.json({ 
       success: true, 
       serialNumber: result.serials[0],
       metadataUri,
-      accountActivated: true,
-      recipientAccountId,
+      recipientAccountId: user.hedera_account_id,
+      transferStatus: result.transferResult.status,
       ...result 
     });
   } catch (err: any) {

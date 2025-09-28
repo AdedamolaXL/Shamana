@@ -1,38 +1,53 @@
-// app/api/nft/mint/route.ts
 import { NextResponse } from "next/server";
-import { mintNft, activateAndGetRecipientAccount } from "@/lib/hedera-tokens";
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
+import { mintNft } from "@/lib/hedera-tokens";
 
 export async function POST(req: Request) {
   try {
-    const { userId, tokenId, metadata } = await req.json();
+    const { playlistId, metadataUri, userId } = await req.json();
 
-    if (!userId || !tokenId || !metadata) {
+    if (!playlistId || !metadataUri || !userId) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Missing playlistId, metadataUri, or userId" },
         { status: 400 }
       );
     }
 
-    // Ensure recipient account exists
-    const recipientAccount = await activateAndGetRecipientAccount(userId);
-    const recipientAccountId =
-      typeof recipientAccount === "string"
-        ? recipientAccount
-        : recipientAccount.accountId;
+    const supabase = createRouteHandlerClient({ cookies });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
 
-    // Mint NFT(s) with metadata
-    const metadataArray = [Buffer.from(metadata)];
-    const result = await mintNft(tokenId, metadataArray, recipientAccountId);
-
-    return NextResponse.json({
-  success: true,
-  ...result,
-  metadataUri: metadata, 
-});
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: err.message || "NFT mint failed" },
-      { status: 500 }
+    // 👇 Mint NFT
+    const nftResult = await mintNft(
+      process.env.HEDERA_NFT_TOKEN_ID!,
+      [Buffer.from(metadataUri)],
+      userId
     );
+
+    // Create collection record
+    const { data, error } = await supabase
+      .from("playlist_collections")
+      .insert({
+        user_id: user.id, // UUID of creator/collector
+        playlist_id: playlistId,
+        nft_token_id: nftResult.tokenId,
+        nft_serial_number: nftResult.serials[0],
+        nft_metadata_uri: metadataUri,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Failed to create collection record:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, nftResult, collection: data });
+  } catch (error: any) {
+    console.error("NFT minting error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

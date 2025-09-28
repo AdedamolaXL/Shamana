@@ -74,6 +74,44 @@ export async function POST(request: NextRequest) {
 
     console.log('Song added by user:', session.user.id);
 
+    const updateEarningsRecord = async (playlistId: string, userId: string) => {
+  try {
+    const supabase = createRouteHandlerClient({ cookies });
+    
+    // Get current contribution count for this user
+    const { data: existingEarnings } = await supabase
+      .from('playlist_earnings')
+      .select('songs_contributed')
+      .eq('user_id', userId)
+      .eq('playlist_id', playlistId)
+      .single();
+
+    const newContributionCount = (existingEarnings?.songs_contributed || 0) + 1;
+
+    // Upsert earnings record
+    await supabase
+      .from('playlist_earnings')
+      .upsert({
+        user_id: userId,
+        playlist_id: playlistId,
+        songs_contributed: newContributionCount,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,playlist_id'
+      });
+
+    console.log(`Updated earnings record: user ${userId} now has ${newContributionCount} contributions to playlist ${playlistId}`);
+  } catch (error) {
+    console.error("Error updating earnings record:", error);
+    // Don't fail the entire request if earnings tracking fails
+  }
+};
+
+    // Call this after successful song addition
+    await updateEarningsRecord(playlistId, session.user.id);
+
+
+
     const autoCollectPlaylist = async (playlistId: string, userId: string, userEmail: string) => {
       try {
         console.log(`Attempting auto-collection for user ${userId} on playlist ${playlistId}`);
