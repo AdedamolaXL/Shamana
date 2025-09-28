@@ -51,7 +51,8 @@ export async function GET(req: Request) {
             total_claimed: earning.total_claimed,
             current_entitlement: currentEntitlement,
             claimable_amount: claimableAmount,
-            playlist_value: playlistValue.value
+            playlist_value: playlistValue.value,
+            share_coefficient: shareCoefficient
           };
         } catch (error) {
           console.error(`Error calculating earnings for playlist ${earning.playlist_id}:`, error);
@@ -63,7 +64,8 @@ export async function GET(req: Request) {
             total_claimed: earning.total_claimed,
             current_entitlement: 0,
             claimable_amount: 0,
-            playlist_value: 0
+            playlist_value: 0,
+            share_coefficient: 0
           };
         }
       })

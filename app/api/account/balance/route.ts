@@ -47,9 +47,9 @@ export async function GET(req: Request) {
     await client.close();
 
     return NextResponse.json({ 
-      balance: tokenBalance,
-      accountId: user.hedera_account_id
-    });
+  balance: Number(tokenBalance), // Ensure it's a number, not an object
+  accountId: user.hedera_account_id
+});
 
   } catch (error) {
     console.error("Error fetching balance:", error);

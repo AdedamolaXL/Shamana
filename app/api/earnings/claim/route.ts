@@ -54,6 +54,16 @@ export async function POST(req: Request) {
       earnings?.last_claimed_value || 0
     );
 
+    console.log('Claim calculation debug:', {
+  playlistId,
+  userId: session.user.id,
+  playlistValue: playlistValue.value,
+  shareCoefficient,
+  currentEntitlement,
+  lastClaimedValue: earnings?.last_claimed_value || 0,
+  claimableAmount
+});
+
     if (claimableAmount <= 0) {
       return NextResponse.json({ 
         error: "No claimable earnings at this time",

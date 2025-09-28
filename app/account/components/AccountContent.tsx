@@ -11,6 +11,7 @@ import { useUser } from "@/hooks/useUser"
 import { FaCoins, FaSync, FaWallet, FaMusic, FaChartLine, FaPlayCircle } from "react-icons/fa"
 
 interface PlaylistEarning {
+  share_coefficient: number
   playlist_id: string;
   playlist_name: string;
   songs_contributed: number;
@@ -33,11 +34,10 @@ const AccountContent = () => {
   const [claimingPlaylistId, setClaimingPlaylistId] = useState<string | null>(null)
 
   const supabaseClient = useSupabaseClient()
-  const { user, userDetails, isLoading: userLoading, } = useUser()
+  const { user, userDetails, isLoading: userLoading } = useUser()
   const router = useRouter()
 
-  
-   // Fetch token balance
+  // Fetch token balance
   const fetchTokenBalance = async () => {
     if (!user) return;
     
@@ -58,7 +58,7 @@ const AccountContent = () => {
     }
   };
 
-  // Fetch playlist earnings
+  // Fetch playlist earnings - FIXED: This was defined but never called
   const fetchPlaylistEarnings = async () => {
     if (!user) return;
     
@@ -67,6 +67,7 @@ const AccountContent = () => {
       const response = await fetch('/api/earnings/playlists');
       if (response.ok) {
         const data = await response.json();
+        console.log('Earnings data:', data); // Debug log
         setPlaylistEarnings(data.earnings || []);
       } else {
         console.error('Failed to fetch playlist earnings');
@@ -81,6 +82,12 @@ const AccountContent = () => {
   // Claim earnings for a specific playlist
   const claimEarnings = async (playlistId: string) => {
     if (!user) return;
+
+      console.log('Debug claim attempt:', {
+    playlistId,
+    userId: user.id,
+    earningData: playlistEarnings.find(e => e.playlist_id === playlistId)
+  })
     
     setClaimingPlaylistId(playlistId);
     try {
@@ -121,16 +128,18 @@ const AccountContent = () => {
     }
   };
 
-
+  // FIXED: Add useEffect to fetch earnings when user is available
   useEffect(() => {
     if (user) {
       fetchTokenBalance();
+      fetchPlaylistEarnings(); // This was missing!
     }
   }, [user]);
 
   // Refresh balance function
   const handleRefreshBalance = () => {
     fetchTokenBalance();
+    fetchPlaylistEarnings(); // Refresh earnings too
     toast.success("Balance refreshed!");
   };
 
@@ -142,7 +151,7 @@ const AccountContent = () => {
     }
   })
 
-    // Fetch username separately if userDetails is null
+  // Fetch username separately if userDetails is null
   useEffect(() => {
     const fetchUsername = async () => {
       if (user && !userDetails) {
@@ -160,7 +169,6 @@ const AccountContent = () => {
           
           if (data) {
             setUsername(data.username || '')
-            // Reset form with fetched data
             reset({
               full_name: data.full_name || '',
               email: user?.email || '',
@@ -178,25 +186,16 @@ const AccountContent = () => {
     fetchUsername()
   }, [user, userDetails, supabaseClient, reset])
 
-  // Add debug logging
-  useEffect(() => {
-    console.log('User details:', userDetails)
-    console.log('User:', user)
-    console.log('Is user loading:', userLoading)
-  }, [userDetails, user, userLoading])
-
-
   const refreshUserData = async () => {
-  try {
-    const { data: session } = await supabaseClient.auth.getSession()
-    if (session?.session) {
-      // This should trigger a refresh of the user context
-      await supabaseClient.auth.refreshSession()
+    try {
+      const { data: session } = await supabaseClient.auth.getSession()
+      if (session?.session) {
+        await supabaseClient.auth.refreshSession()
+      }
+    } catch (error) {
+      console.error('Error refreshing session:', error)
     }
-  } catch (error) {
-    console.error('Error refreshing session:', error)
   }
-}
 
   const handleUpdate: SubmitHandler<FieldValues> = async (values) => {
     try {
@@ -227,7 +226,7 @@ const AccountContent = () => {
     }
   }
 
- useEffect(() => {
+  useEffect(() => {
     const refreshUserDetails = async () => {
       if (!user?.id) return;
       
@@ -244,7 +243,6 @@ const AccountContent = () => {
         }
         
         if (data) {
-          // Update the form with the latest data
           reset({
             full_name: data.full_name || '',
             email: user.email || '',
@@ -259,8 +257,7 @@ const AccountContent = () => {
     if (user && !userDetails) {
       refreshUserDetails();
     }
- }, [user, userDetails, supabaseClient, reset]);
-  
+  }, [user, userDetails, supabaseClient, reset]);
 
   // Show loading state while user data is being fetched
   if (userLoading || (!userDetails && user)) {
@@ -276,8 +273,7 @@ const AccountContent = () => {
         </div>
       </div>
     )
-  }    
-  
+  }
 
   return (
     <div className="flex flex-col gap-y-8">
@@ -293,14 +289,14 @@ const AccountContent = () => {
             label="Email"
             {...register('email', { required: true })}
           />
-            <Input 
+          <Input 
             id="username"
             disabled={true}
             label="Username"
-             {...register('username', { 
-    required: true,
-    validate: (value) => value.trim().length > 0 || 'Username cannot be empty'
-  })}
+            {...register('username', { 
+              required: true,
+              validate: (value) => value.trim().length > 0 || 'Username cannot be empty'
+            })}
           />
           <Input 
             id="full_name"
@@ -318,16 +314,16 @@ const AccountContent = () => {
         </form>
       </div>
 
-       <div className="border-t border-neutral-700 pt-6">
+      <div className="border-t border-neutral-700 pt-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-white text-xl font-semibold">Your Earnings</h2>
           <div className="flex gap-2">
             <button 
-              onClick={fetchTokenBalance}
-              disabled={isLoadingBalance}
+              onClick={handleRefreshBalance} // Changed to handleRefreshBalance
+              disabled={isLoadingBalance || isLoadingEarnings}
               className="flex items-center gap-2 text-green-500 hover:text-green-400 transition-colors disabled:opacity-50 p-2"
             >
-              <FaSync className={isLoadingBalance ? "animate-spin" : ""} />
+              <FaSync className={isLoadingBalance || isLoadingEarnings ? "animate-spin" : ""} />
             </button>
             <button 
               onClick={claimAllEarnings}
@@ -348,7 +344,7 @@ const AccountContent = () => {
                 <FaCoins className="text-white text-xl" />
               </div>
               <div>
-                <h3 className="text-white font-semibold text-lg">Total Music Points</h3>
+                <h3 className="text-white font-semibold text-lg">Total Music Earnings</h3>
                 <p className="text-neutral-400 text-sm">Based on your contributions</p>
               </div>
             </div>
@@ -360,7 +356,7 @@ const AccountContent = () => {
                   tokenBalance.toLocaleString()
                 )}
               </div>
-              <div className="text-neutral-400 text-sm">POINTS</div>
+              <div className="text-neutral-400 text-sm">MANA</div>
             </div>
           </div>
 
@@ -433,15 +429,14 @@ const AccountContent = () => {
                   {/* Progress bar showing entitlement */}
                   <div className="mt-2">
                     <div className="flex justify-between text-xs text-neutral-400 mb-1">
-                      <span>Your share: {((earning.songs_contributed / (earning.playlist_value || 1)) * 100).toFixed(1)}%</span>
+                      <span>Your share: {((earning.share_coefficient || 0) * 100).toFixed(1)}%</span>
                       <span>Entitlement: {(earning.current_entitlement || 0).toFixed(2)}</span>
                     </div>
                     <div className="w-full bg-neutral-700 rounded-full h-2">
                       <div 
-                        className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-300"
                         style={{ 
-                          width: `${Math.min(100, ((earning.current_entitlement || 0) / Math.max(1, earning.playlist_value || 1)) * 100)}%` 
-                        }}
+  width: `${Math.min(100, ((earning.share_coefficient || 0) * 100))}%` 
+}}
                       ></div>
                     </div>
                   </div>
@@ -465,8 +460,6 @@ const AccountContent = () => {
           </div>
         </div>
       </div>
-
-
 
       <div className="border-t border-neutral-700 pt-6">
         <h2 className="text-white text-xl font-semibold mb-4">Subscription</h2>
@@ -497,8 +490,6 @@ const AccountContent = () => {
           </Button>
         </div>
       </div>
-
-     
     </div>
   )
 }

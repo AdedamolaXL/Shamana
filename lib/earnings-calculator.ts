@@ -37,11 +37,8 @@ export class EarningsCalculator {
     // Calculate total songs and minutes
     const songsCount = playlist.playlist_songs?.length || 0;
     const totalSeconds = playlist.playlist_songs?.reduce((total, ps) => {
-      const songDurations = Array.isArray(ps.songs)
-        ? ps.songs.reduce((sum, song) => sum + (song.duration || 0), 0)
-        : 0;
-      return total + songDurations;
-    }, 0) || 0;
+  return total + (ps.songs?.duration || 0);
+}, 0) || 0;
     const totalMinutes = totalSeconds / 60;
 
     // Get number of collectors

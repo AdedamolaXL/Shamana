@@ -38,9 +38,9 @@ export async function mintFungible(
 
     // Transfer to recipient
     const transferTx = new TransferTransaction()
-      .addTokenTransfer(tokenId, operatorId, -amount)
-      .addTokenTransfer(tokenId, recipientAccountId, amount)
-      .freezeWith(client);
+  .addTokenTransfer(TokenId.fromString(tokenId), operatorId.toString(), -amount)
+  .addTokenTransfer(TokenId.fromString(tokenId), recipientAccountId, amount)
+  .freezeWith(client);
 
     const transferSigned = await transferTx.sign(operatorKey);
     const transferSubmit = await transferSigned.execute(client);
