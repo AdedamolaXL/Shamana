@@ -25,6 +25,38 @@ interface TribesClientProps {
   session: Session | null;
 }
 
+// Move sampleTribes OUTSIDE the component
+const sampleTribes: MusicTribe[] = [
+  {
+    id: "afrobeat",
+    name: "Afrobeat Collective",
+    description: "Vibrant rhythms and infectious grooves from Africa",
+    memberCount: 1240,
+    playlistCount: 56,
+    icon: <FaMusic className="text-orange-500" />,
+    color: "from-orange-500 to-red-500",
+    isFeatured: true
+  },
+  {
+    id: "indie",
+    name: "Indie Discovery",
+    description: "Fresh independent artists and hidden gems",
+    memberCount: 890,
+    playlistCount: 42,
+    icon: <FaMusic className="text-green-500" />,
+    color: "from-green-500 to-emerald-500"
+  },
+  {
+    id: "electronic",
+    name: "Electronic Waves",
+    description: "EDM, synthwave, and electronic vibrations",
+    memberCount: 1560,
+    playlistCount: 78,
+    icon: <FaMusic className="text-purple-500" />,
+    color: "from-purple-500 to-pink-500"
+  }
+];
+
 const TribesClient: React.FC<TribesClientProps> = ({ session }) => {
   const [musicTribes, setMusicTribes] = useState<MusicTribe[]>([]);
   const [isLoadingTribes, setIsLoadingTribes] = useState(true);
@@ -33,7 +65,28 @@ const TribesClient: React.FC<TribesClientProps> = ({ session }) => {
   const { user } = useUser();
   const authModal = useAuthModal();
 
-  // Fetch tribes from API
+  // Helper functions for tribe styling
+  const getGradientFromCategory = (category: string): string => {
+    const gradientMap: { [key: string]: string } = {
+      'rock': 'from-red-500 to-orange-500',
+      'pop': 'from-pink-500 to-rose-500',
+      'jazz': 'from-yellow-500 to-amber-500',
+      'hiphop': 'from-purple-500 to-pink-500',
+      'electronic': 'from-blue-500 to-cyan-500',
+      'classical': 'from-indigo-500 to-purple-500',
+      'country': 'from-orange-500 to-yellow-500',
+      'rnb': 'from-red-500 to-pink-500',
+      'reggae': 'from-green-500 to-lime-500',
+      'metal': 'from-gray-500 to-slate-500',
+      'folk': 'from-amber-500 to-orange-500',
+      'blues': 'from-blue-500 to-indigo-500',
+      'afrobeat': 'from-orange-500 to-red-500',
+      'indie': 'from-green-500 to-emerald-500'
+    };
+    return gradientMap[category?.toLowerCase()] || 'from-gray-500 to-slate-500';
+  };
+
+  // Fetch tribes from API - now sampleTribes can be safely used
   useEffect(() => {
     const fetchTribes = async () => {
       try {
@@ -70,28 +123,7 @@ const TribesClient: React.FC<TribesClientProps> = ({ session }) => {
     };
 
     fetchTribes();
-  }, []);
-
-  // Helper functions for tribe styling
-  const getGradientFromCategory = (category: string): string => {
-    const gradientMap: { [key: string]: string } = {
-      'rock': 'from-red-500 to-orange-500',
-      'pop': 'from-pink-500 to-rose-500',
-      'jazz': 'from-yellow-500 to-amber-500',
-      'hiphop': 'from-purple-500 to-pink-500',
-      'electronic': 'from-blue-500 to-cyan-500',
-      'classical': 'from-indigo-500 to-purple-500',
-      'country': 'from-orange-500 to-yellow-500',
-      'rnb': 'from-red-500 to-pink-500',
-      'reggae': 'from-green-500 to-lime-500',
-      'metal': 'from-gray-500 to-slate-500',
-      'folk': 'from-amber-500 to-orange-500',
-      'blues': 'from-blue-500 to-indigo-500',
-      'afrobeat': 'from-orange-500 to-red-500',
-      'indie': 'from-green-500 to-emerald-500'
-    };
-    return gradientMap[category?.toLowerCase()] || 'from-gray-500 to-slate-500';
-  };
+  }, []); // Now the dependency array can be empty
 
   const handleTribeCreated = () => {
     // Refresh the tribes list
@@ -135,38 +167,6 @@ const TribesClient: React.FC<TribesClientProps> = ({ session }) => {
     }
     return num.toString();
   };
-
-  // Sample tribes data
-  const sampleTribes: MusicTribe[] = [
-    {
-      id: "afrobeat",
-      name: "Afrobeat Collective",
-      description: "Vibrant rhythms and infectious grooves from Africa",
-      memberCount: 1240,
-      playlistCount: 56,
-      icon: <FaMusic className="text-orange-500" />,
-      color: "from-orange-500 to-red-500",
-      isFeatured: true
-    },
-    {
-      id: "indie",
-      name: "Indie Discovery",
-      description: "Fresh independent artists and hidden gems",
-      memberCount: 890,
-      playlistCount: 42,
-      icon: <FaMusic className="text-green-500" />,
-      color: "from-green-500 to-emerald-500"
-    },
-    {
-      id: "electronic",
-      name: "Electronic Waves",
-      description: "EDM, synthwave, and electronic vibrations",
-      memberCount: 1560,
-      playlistCount: 78,
-      icon: <FaMusic className="text-purple-500" />,
-      color: "from-purple-500 to-pink-500"
-    }
-  ];
 
   return (
     <div className="bg-neutral-900 min-h-screen p-6">

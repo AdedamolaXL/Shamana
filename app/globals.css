@@ -130,3 +130,39 @@
   background: #6a11cb;
   width: 60%; /* will be dynamic */
 }
+
+/* 7. Pulse glow animation */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+}
+
+.pulse-animation {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.pulse-slow {
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+.pulse-fast {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.pulse-delay-1 {
+  animation-delay: 0.5s;
+}
+
+.pulse-delay-2 {
+  animation-delay: 1s;
+}
+
+.pulse-delay-3 {
+  animation-delay: 1.5s;
+}

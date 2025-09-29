@@ -57,12 +57,7 @@ const MediaItem: React.FC<MediaItemProps> = ({ data, onClick, showDuration = fal
                     {formatDuration(data.duration)}
                 </span>
             )}
-            <div className="absolute bottom-24 right-5">
-                <PlayButton />
-            </div>
-            <div className="absolute top-3 right-3">
-                <AddToPlaylistButton songId={data.id} />
-            </div>
+            
         </div>
     )
 }

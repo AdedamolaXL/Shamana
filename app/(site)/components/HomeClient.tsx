@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Session } from "@supabase/auth-helpers-nextjs";
 import { Playlist, Song, PlaylistWithSongs } from "@/types";
 import { FaMusic, FaPlay, FaClock, FaUsers, FaFire, FaSeedling, FaStar, FaPlus } from "react-icons/fa";
@@ -10,6 +10,7 @@ import { MediaItem } from "@/components";
 import { useRouter } from "next/navigation";
 import useOnPlay from "@/hooks/useOnPlay";
 import CreateTribeModal from "@/components/tribe/CreateTribeModal";
+import Image from "next/image";
 
 interface ActivityItem {
   type: "dream" | "spotlight" | "update";
@@ -43,104 +44,28 @@ interface HomeClientProps {
 }
 
 
-  
- // Feed activities
-  const activities = [
-    {
-      id: 1,
-      creator: "Alex Turner",
-      time: "2 hours ago",
-      playlist: "Indie Rock Essentials",
-      gradient: "linear-gradient(135deg,#6a11cb,#2575fc)",
-      songs: [
-        "Do I Wanna Know? - Arctic Monkeys",
-        "Time to Pretend - MGMT",
-        "Last Nite - The Strokes",
-      ],
-      comment: {
-        user: "Sarah Chen",
-        text: "This playlist is amazing! Added to my library.",
-        time: "30 minutes ago",
-      },
-    },
-    {
-      id: 2,
-      creator: "Maya Rodriguez",
-      time: "1 day ago",
-      playlist: "Chill Vibes Only",
-      gradient: "linear-gradient(135deg, #ff9a9e, #fad0c4)",
-      songs: [
-        "Breathe Deeper - Tame Impala",
-        "Apocalypse - Cigarettes After Sex",
-        "The Night We Met - Lord Huron",
-      ],
-      comment: {
-        user: "Jamal Williams",
-        text: "Perfect for my study sessions, thanks!",
-        time: "12 hours ago",
-      },
-    },
-    {
-      id: 3,
-      creator: "DJ Nova",
-      time: "3 days ago",
-      playlist: "Electronic Sunrise",
-      gradient: "linear-gradient(135deg, #0cebeb, #20e3b2, #29ffc6)",
-      songs: [
-        "Strobe - Deadmau5",
-        "Language - Porter Robinson",
-        "Innerbloom - RÜFÜS DU SOL",
-      ],
-      comment: {
-        user: "Liam Thompson",
-        text: "This mix got me through my morning run! 🔥",
-        time: "2 days ago",
-      },
-    },
-    {
-      id: 4,
-      creator: "Sophia Williams",
-      time: "5 days ago",
-      playlist: "90s Throwback",
-      gradient: "linear-gradient(135deg, #8360c3, #2ebf91)",
-      songs: [
-        "Wonderwall - Oasis",
-        "Zombie - The Cranberries",
-        "Smells Like Teen Spirit - Nirvana",
-      ],
-      comment: {
-        user: "Marcus Brown",
-        text: "Nostalgia hitting hard with this one! Great selection.",
-        time: "4 days ago",
-      },
-    },
-    {
-      id: 5,
-      creator: "Carlos Mendez",
-      time: "1 week ago",
-      playlist: "Latin Heat",
-      gradient: "linear-gradient(135deg, #ff5e62, #ff9966)",
-      songs: [
-        "Despacito - Luis Fonsi",
-        "Mi Gente - J Balvin",
-        "Taki Taki - DJ Snake",
-      ],
-      comment: {
-        user: "Elena Rodriguez",
-        text: "¡Esto es fuego! Perfect for summer parties.",
-        time: "6 days ago",
-      },
-    },
-  ];
+  const gradientPalette = [
+  "linear-gradient(135deg, #6a11cb, #2575fc)",  // Purple to Blue
+  "linear-gradient(135deg, #ff9a9e, #fad0c4)",  // Pink to Peach
+  "linear-gradient(135deg, #0cebeb, #20e3b2, #29ffc6)",  // Teal to Green
+  "linear-gradient(135deg, #8360c3, #2ebf91)",  // Purple to Green
+  "linear-gradient(135deg, #ff5e62, #ff9966)",  // Red to Orange
+  "linear-gradient(135deg, #42e695, #3bb2b8)",  // Green to Teal
+  "linear-gradient(135deg, #ff7e5f, #feb47b)",  // Coral to Peach
+  "linear-gradient(135deg, #667eea, #764ba2)",  // Blue to Purple
+  "linear-gradient(135deg, #f093fb, #f5576c)",  // Pink to Red
+  "linear-gradient(135deg, #4facfe, #00f2fe)"   // Blue to Cyan
+];  
+
+
+ 
+
 
   const trybes = [
-    "Indie Rock Collective",
-    "Electronic Dance",
-    "Hip-Hop Heads",
-    "Jazz Enthusiasts",
-    "R&B Soul",
-    "90s Nostalgia",
-    "Latin Beats",
+    "Afrobbeats",
+    "Amapiano",
+    "Hiplife",
+    "Alte",
   ];
 
     const events = [
@@ -163,8 +88,8 @@ interface HomeClientProps {
       isFeatured: true
     },
     {
-      id: "indie",
-      name: "Indie Discovery",
+      id: "alte",
+      name: "Alte Season",
       description: "Fresh independent artists and hidden gems",
       memberCount: 890,
       playlistCount: 42,
@@ -172,8 +97,8 @@ interface HomeClientProps {
       color: "from-green-500 to-emerald-500"
     },
     {
-      id: "electronic",
-      name: "Electronic Waves",
+      id: "Ooontz Ooontz",
+      name: "Afro House",
       description: "EDM, synthwave, and electronic vibrations",
       memberCount: 1560,
       playlistCount: 78,
@@ -201,33 +126,78 @@ const HomeClient: React.FC<HomeClientProps> = ({
   const [currentSlide, setCurrentSlide] = useState(0);
   const [error, setError] = useState(null);
 
-  
 
-  // Autoplay slides
-   useEffect(() => {
-    startAutoPlay();
-    return () => {
-      if (autoPlayRef.current) {
-        clearInterval(autoPlayRef.current);
-      }
-    };
-   }, []);
+
+
   
-  const startAutoPlay = () => {
+// Define handleCreateDream first since it's used in slides
+  const handleCreateDream = () => {
+    console.log("Create playlist button clicked");
+    if (dreamInput.trim()) {
+      setIsCreateModalOpen(true);
+    } else {
+      setIsCreateModalOpen(true);
+    }
+  };
+
+  // Define slides BEFORE the useEffect that depends on it
+  const slides = [
+    {
+      id: 1,
+      title: "Discover Your Sound",
+      description:
+        "Create, share, and explore music with a global community of artists and listeners.",
+      buttonText: "Create Playlist",
+      buttonStyle: {},
+      background: "carousel-slide-1",
+      onClickHandler: handleCreateDream 
+    },
+    {
+      id: 2,
+      title: "Collaborate & Create",
+      description:
+        "Join forces with other music lovers to create extraordinary playlists that transport listeners to different timelines. Get rewarded with exclusive NFTs for creating content that resonates with people who love it just as much.",
+      buttonText: "Start Collaborating",
+      buttonStyle: { background: "#000", color: "#fff" },
+      background: "carousel-slide-2",
+    },
+    {
+      id: 3,
+      title: "Find Your Trybe",
+      description:
+        "Join Trybes that match your unique vibe and connect with music lovers who share your taste. Discover new music, share your creations, and build lasting connections with people who get your sound.",
+      buttonText: "Explore Trybes",
+      buttonStyle: {},
+      background: "carousel-slide-3",
+    },
+  ];
+
+  // Helper function for autoplay
+ const startAutoPlay = useCallback(() => {
     if (autoPlayRef.current) {
       clearInterval(autoPlayRef.current);
     }
     autoPlayRef.current = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 5000);
-  };
+  }, [slides.length]);
+
+  // Now the useEffect can safely use slides.length
+  useEffect(() => {
+    startAutoPlay();
+    return () => {
+      if (autoPlayRef.current) {
+        clearInterval(autoPlayRef.current);
+      }
+    };
+  }, [startAutoPlay]);
 
   const showSlide = (index: number) => {
     setCurrentSlide(index);
     startAutoPlay();
   };
 
-    const nextSlide = () => {
+  const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % slides.length);
     startAutoPlay();
   };
@@ -352,22 +322,21 @@ const HomeClient: React.FC<HomeClientProps> = ({
     fetchTribes();
   };
   
-  useEffect(() => {
+useEffect(() => {
   setPlaylists(initialPlaylists);
   setSongs(initialSongs);
   
   // Create activity items from playlists (most recent first)
-const playlistActivities: ActivityItem[] = initialPlaylists
+  const playlistActivities: ActivityItem[] = initialPlaylists
     .slice(0, 5)
     .map((playlist, index) => {
-      // Get the username from the playlist user data - FIXED HERE
+      // Get the username from the playlist user data
       let username = "Anonymous";
       if (playlist.user) {
         username = playlist.user.username || 
                   (playlist.user.email ? playlist.user.email.split('@')[0] : "Anonymous");
       } else {
         // Fallback: try to get user data from the joined users table
-        // This handles the case where the user data is in a different property
         const playlistWithUser = playlist as any;
         if (playlistWithUser.user) {
           username = playlistWithUser.user.username || 
@@ -375,29 +344,45 @@ const playlistActivities: ActivityItem[] = initialPlaylists
         }
       }
 
-       // Extract songs from playlist
-    const playlistSongs = (playlist.playlist_songs || [])
-      .sort((a, b) => a.position - b.position)
-      .map((ps: any) => `${ps.songs.title} - ${ps.songs.author}`);
+      // Extract songs from playlist
+      const playlistSongs = (playlist.playlist_songs || [])
+        .sort((a, b) => a.position - b.position)
+        .map((ps: any) => `${ps.songs.title} - ${ps.songs.author}`);
       
-      
-      // Calculate relative timestamp
+      // Calculate relative timestamp - FIXED THIS PART
       let timestamp = "Just now";
       if (playlist.created_at) {
         const createdTime = new Date(playlist.created_at).getTime();
         const now = Date.now();
-        const diffInHours = Math.floor((now - createdTime) / (1000 * 60 * 60));
+        const diffInMs = now - createdTime;
+        const diffInSeconds = Math.floor(diffInMs / 1000);
+        const diffInMinutes = Math.floor(diffInSeconds / 60);
+        const diffInHours = Math.floor(diffInMinutes / 60);
+        const diffInDays = Math.floor(diffInHours / 24);
         
-        if (diffInHours === 0) {
-          const diffInMinutes = Math.floor((now - createdTime) / (1000 * 60));
-          timestamp = diffInMinutes <= 1 ? "Just now" : `${diffInMinutes} minutes ago`;
+        if (diffInSeconds < 60) {
+          timestamp = "Just now";
+        } else if (diffInMinutes < 60) {
+          timestamp = `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
         } else if (diffInHours < 24) {
-          timestamp = `${diffInHours} hours ago`;
+          timestamp = `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+        } else if (diffInDays < 7) {
+          timestamp = `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
         } else {
-          const diffInDays = Math.floor(diffInHours / 24);
-          timestamp = `${diffInDays} days ago`;
+          const diffInWeeks = Math.floor(diffInDays / 7);
+          if (diffInWeeks < 4) {
+            timestamp = `${diffInWeeks} week${diffInWeeks > 1 ? 's' : ''} ago`;
+          } else {
+            // For older dates, show the actual date
+            timestamp = new Date(playlist.created_at).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
+            });
+          }
         }
       } else {
+        // Fallback for playlists without created_at
         timestamp = index === 0 ? "Just now" : `${index + 1} hours ago`;
       }
 
@@ -407,44 +392,34 @@ const playlistActivities: ActivityItem[] = initialPlaylists
         action: "dreamed",
         playlistName: playlist.name,
         details: playlistSongs.length > 0 ? "" : "Be the first to add songs!",
-        timestamp: playlist.created_at ? new Date(playlist.created_at).toLocaleString() : "Just now",
+        timestamp: timestamp, // Use the calculated relative time
         playlist: playlist,
         songs: playlistSongs
       };
     });
 
     // Combine with some sample activities
-    const sampleActivities: ActivityItem[] = [
-      {
-        type: "spotlight",
-        user: "Sarah",
-        action: "spotlighted",
-        playlistName: "Workout Energy",
-        details: "Critic: Needs more warm-up flow",
-        timestamp: "5 hours ago"
-      },
-      {
-        type: "update",
-        user: "Tribe",
-        action: "updated",
-        playlistName: "Afrobeat Summer",
-        details: "5 new nurtures",
-        timestamp: "1 day ago"
-      }
-    ];
+    // const sampleActivities: ActivityItem[] = [
+    //   {
+    //     type: "spotlight",
+    //     user: "Sarah",
+    //     action: "spotlighted",
+    //     playlistName: "Workout Energy",
+    //     details: "Critic: Needs more warm-up flow",
+    //     timestamp: "5 hours ago"
+    //   },
+    //   {
+    //     type: "update",
+    //     user: "Tribe",
+    //     action: "updated",
+    //     playlistName: "Afrobeat Summer",
+    //     details: "5 new nurtures",
+    //     timestamp: "1 day ago"
+    //   }
+    // ];
 
-    setRecentActivities([...playlistActivities, ...sampleActivities]);
+    setRecentActivities([...playlistActivities]);
   }, [initialPlaylists, initialSongs, session]);
-
-  const handleCreateDream = () => {
-    console.log("Create playlist button clicked");
-    if (dreamInput.trim()) {
-      setIsCreateModalOpen(true);
-    } else {
-      // Open modal even if no input (user can type in modal)
-      setIsCreateModalOpen(true);
-    }
-  };
 
   const handlePlaylistCreated = (playlistId: string) => {
     setIsCreateModalOpen(false);
@@ -484,37 +459,7 @@ const playlistActivities: ActivityItem[] = initialPlaylists
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const slides = [
-    {
-      id: 1,
-      title: "Discover Your Sound",
-      description:
-        "Create, share, and explore music with a global community of artists and listeners.",
-      buttonText: "Create Playlist",
-      buttonStyle: {},
-      background: "carousel-slide-1",
-      onClickHandler: handleCreateDream 
-    },
-    {
-      id: 2,
-      title: "Collaborate & Create",
-      description:
-        "Join forces with other music lovers to create extraordinary playlists that transport listeners to different timelines. Get rewarded with exclusive NFTs for creating content that resonates with people who love it just as much.",
-      buttonText: "Start Collaborating",
-      buttonStyle: { background: "#000", color: "#fff" },
-      background: "carousel-slide-2",
-    },
-    {
-      id: 3,
-      title: "Find Your Trybe",
-      description:
-        "Join Trybes that match your unique vibe and connect with music lovers who share your taste. Discover new music, share your creations, and build lasting connections with people who get your sound.",
-      buttonText: "Explore Trybes",
-      buttonStyle: {},
-      background: "carousel-slide-3",
-    },
-];
-
+  
   return (    
     <main className="max-w-[1200px] mx-auto px-[20px]">
       
@@ -573,72 +518,73 @@ const playlistActivities: ActivityItem[] = initialPlaylists
       <div className="text-red-500 p-2.5 mb-5">{error}</div>
     )}
 
-    {recentActivities.map((activity, index) => (
-      <div key={activity.playlistId || index} className="bg-[#1a1a1a] rounded-xl p-5 mb-5">
-        {/* Header */}
-        <div className="flex items-center gap-2.5 mb-4">
-          <img
-            src="https://res.cloudinary.com/dqhawdcol/image/upload/v1758202400/e9ifs1tewfgemgxfc5kc.jpg"
-            alt="Creator"
-            className="w-10 h-10 rounded-full object-cover"
-          />
-          <div className="flex-1">
-            <div className="font-semibold">{activity.user}</div>
-            <div className="text-sm text-gray-400 mt-1">{activity.timestamp}</div>
-          </div>
+    {recentActivities.map((activity, index) => {
+  // Get a gradient based on the index to cycle through the palette
+  const gradientIndex = index % gradientPalette.length;
+  const thumbnailGradient = gradientPalette[gradientIndex];
+  
+  // Different pulse speeds for variety
+  const pulseSpeed = index % 3 === 0 ? 'pulse-slow' : index % 3 === 1 ? 'pulse-animation' : 'pulse-fast';
+  const pulseDelay = `pulse-delay-${index % 3}`;
+  
+  return (
+    <div key={activity.playlistId || index} className="bg-[#1a1a1a] rounded-xl p-5 mb-5">
+      {/* Header */}
+      <div className="flex items-center gap-2.5 mb-4">
+         <Image
+          src="https://res.cloudinary.com/dqhawdcol/image/upload/v1758202400/e9ifs1tewfgemgxfc5kc.jpg"
+          alt="Creator"
+          width={40}
+          height={40}
+          className="w-10 h-10 rounded-full object-cover"
+        />
+        <div className="flex-1">
+          <div className="font-semibold">{activity.user}</div>
+          <div className="text-sm text-gray-400 mt-1">{activity.timestamp}</div>
         </div>
-
-
-        {/* Playlist Thumbnail */}
-       <div
-          className="relative h-[180px] rounded-lg mb-4 overflow-hidden"
-          style={{ 
-            background: activity.type === "dream" 
-              ? "linear-gradient(135deg, #6a11cb, #2575fc)" 
-              : activity.type === "spotlight" 
-                ? "linear-gradient(135deg, #ff9a9e, #fad0c4)"
-                : "linear-gradient(135deg, #0cebeb, #20e3b2, #29ffc6)"
-          }}
-        >
-          <div 
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/90 w-[50px] h-[50px] rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 hover:bg-white hover:scale-110"
-            onClick={() => activity.playlist && handlePlaylistClick(activity.playlist.id)}
-          >
-            <i className="fas fa-play text-black text-xl"></i>
-          </div>
-        </div>
-
-        {/* Playlist Info */}
-         <div className="mb-4">
-          <div className="text-lg font-semibold mb-1">{activity.playlistName}</div>
-          <div className="text-sm text-gray-300">{activity.details}</div>
-        </div>
-
-        {/* Song List */}
-        <div className="flex flex-col gap-1.5 mb-4">
-          {activity.songs?.map((song: string, index: number) => (
-          <div key={index} className="flex items-center gap-2.5 text-sm text-gray-300">
-          <span className="text-[#6a11cb] font-medium w-5">{index + 1}</span>
-          <span>{song}</span>
-        </div>
-        ))}
-        </div>
-
-        {/* Comments */}
-        {/* <div className="flex gap-2.5 items-start">
-          <img
-            src="https://res.cloudinary.com/dqhawdcol/image/upload/v1758202400/e9ifs1tewfgemgxfc5kc.jpg"
-            alt="Commenter"
-            className="w-[30px] h-[30px] rounded-full object-cover"
-          />
-          <div className="flex-1 bg-[#222] px-4 py-2.5 rounded-2xl">
-            <div className="font-medium mb-1">{activity.comment.user}</div>
-            <div className="text-sm text-gray-300">{activity.comment.text}</div>
-            <div className="text-sm text-gray-400 mt-1">{activity.comment.time}</div>
-          </div>
-        </div> */}
       </div>
-    ))}
+
+      {/* Playlist Thumbnail with Pulsing Animation */}
+      <div
+        className={`relative h-[180px] rounded-lg mb-4 overflow-hidden ${pulseSpeed} ${pulseDelay}`}
+        style={{ 
+          background: activity.type === "dream" 
+            ? thumbnailGradient 
+            : activity.type === "spotlight" 
+              ? "linear-gradient(135deg, #ff9a9e, #fad0c4)"
+              : "linear-gradient(135deg, #0cebeb, #20e3b2, #29ffc6)"
+        }}
+      >
+        {/* Optional: Add a subtle inner glow effect */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
+        
+        <div 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/90 w-[50px] h-[50px] rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 hover:bg-white hover:scale-110 z-10"
+          onClick={() => activity.playlist && handlePlaylistClick(activity.playlist.id)}
+        >
+          <i className="fas fa-play text-black text-xl"></i>
+        </div>
+      </div>
+
+      {/* Rest of the activity content remains the same */}
+      <div className="mb-4">
+        <div className="text-lg font-semibold mb-1">{activity.playlistName}</div>
+        <div className="text-sm text-gray-300">{activity.details}</div>
+      </div>
+
+      {/* Song List */}
+      <div className="flex flex-col gap-1.5 mb-4">
+        {activity.songs?.map((song: string, index: number) => (
+          <div key={index} className="flex items-center gap-2.5 text-sm text-gray-300">
+            <span className="text-[#6a11cb] font-medium w-5">{index + 1}</span>
+            <span>{song}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+    })}
+          
   </div>
 
   {/* Trybes & Events */}
@@ -657,7 +603,7 @@ const playlistActivities: ActivityItem[] = initialPlaylists
           >
             <div className="font-medium">{trybe}</div>
             <button className="bg-transparent border border-[#6a11cb] text-[#6a11cb] px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors hover:bg-[#6a11cb] hover:text-white">
-              Follow
+              View
             </button>
           </div>
         ))}
@@ -684,7 +630,7 @@ const playlistActivities: ActivityItem[] = initialPlaylists
               </div>
             </div>
             <button className="bg-transparent border border-[#6a11cb] text-[#6a11cb] px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors hover:bg-[#6a11cb] hover:text-white w-full text-center">
-              Buy Ticket
+              Coming Soon
             </button>
           </div>
         ))}

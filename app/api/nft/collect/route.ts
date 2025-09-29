@@ -4,6 +4,8 @@ import { uploadToIPFS } from "@/lib/ipfs";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
   try {
     const { playlistId, userId, userEmail } = await req.json();

@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSupabaseClient } from "@supabase/auth-helpers-react"
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form"
 import { toast } from "react-hot-toast"
@@ -8,9 +8,10 @@ import Input from "@/components/ui/Input"
 import Button from "@/components/ui/Button"
 import Modal from "@/components/ui/Modal"
 import { useUser } from "@/hooks/useUser"
-import { FaCoins, FaSync, FaWallet, FaMusic, FaChartLine, FaPlayCircle } from "react-icons/fa"
+import { FaCoins, FaSync, FaWallet, FaMusic, FaChartLine, FaPlayCircle, FaGem, FaPlus } from "react-icons/fa"
 
 interface PlaylistEarning {
+  last_updated: string | number | Date
   share_coefficient: number
   playlist_id: string;
   playlist_name: string;
@@ -32,13 +33,19 @@ const AccountContent = () => {
   const [playlistEarnings, setPlaylistEarnings] = useState<PlaylistEarning[]>([])
   const [isLoadingEarnings, setIsLoadingEarnings] = useState(false)
   const [claimingPlaylistId, setClaimingPlaylistId] = useState<string | null>(null)
+  const [metrics, setMetrics] = useState({
+  songsAdded: 0,
+  playlistsCreated: 0,
+  playlistsCollected: 0
+});
+const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
 
   const supabaseClient = useSupabaseClient()
   const { user, userDetails, isLoading: userLoading } = useUser()
   const router = useRouter()
 
   // Fetch token balance
-  const fetchTokenBalance = async () => {
+  const fetchTokenBalance = useCallback(async () => {
     if (!user) return;
     
     setIsLoadingBalance(true);
@@ -56,10 +63,11 @@ const AccountContent = () => {
     } finally {
       setIsLoadingBalance(false);
     }
-  };
+  }, [user]);
+
 
   // Fetch playlist earnings - FIXED: This was defined but never called
-  const fetchPlaylistEarnings = async () => {
+  const fetchPlaylistEarnings = useCallback(async () => {
     if (!user) return;
     
     setIsLoadingEarnings(true);
@@ -67,7 +75,7 @@ const AccountContent = () => {
       const response = await fetch('/api/earnings/playlists');
       if (response.ok) {
         const data = await response.json();
-        console.log('Earnings data:', data); // Debug log
+        console.log('Earnings data:', data);
         setPlaylistEarnings(data.earnings || []);
       } else {
         console.error('Failed to fetch playlist earnings');
@@ -77,17 +85,17 @@ const AccountContent = () => {
     } finally {
       setIsLoadingEarnings(false);
     }
-  };
+  }, [user]);
 
   // Claim earnings for a specific playlist
   const claimEarnings = async (playlistId: string) => {
     if (!user) return;
 
-      console.log('Debug claim attempt:', {
-    playlistId,
-    userId: user.id,
-    earningData: playlistEarnings.find(e => e.playlist_id === playlistId)
-  })
+    console.log('Debug claim attempt:', {
+      playlistId,
+      userId: user.id,
+      earningData: playlistEarnings.find(e => e.playlist_id === playlistId)
+    })
     
     setClaimingPlaylistId(playlistId);
     try {
@@ -115,6 +123,7 @@ const AccountContent = () => {
     }
   };
 
+
   // Claim all available earnings
   const claimAllEarnings = async () => {
     if (!user) return;
@@ -132,14 +141,35 @@ const AccountContent = () => {
   useEffect(() => {
     if (user) {
       fetchTokenBalance();
-      fetchPlaylistEarnings(); // This was missing!
+      fetchPlaylistEarnings();
     }
+  }, [user, fetchTokenBalance, fetchPlaylistEarnings]);
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      if (!user) return;
+      
+      setIsLoadingMetrics(true);
+      try {
+        const response = await fetch('/api/account/metrics');
+        if (response.ok) {
+          const data = await response.json();
+          setMetrics(data);
+        }
+      } catch (error) {
+        console.error('Error fetching metrics:', error);
+      } finally {
+        setIsLoadingMetrics(false);
+      }
+    };
+
+    fetchMetrics();
   }, [user]);
 
   // Refresh balance function
-  const handleRefreshBalance = () => {
+    const handleRefreshBalance = () => {
     fetchTokenBalance();
-    fetchPlaylistEarnings(); // Refresh earnings too
+    fetchPlaylistEarnings();
     toast.success("Balance refreshed!");
   };
 
@@ -379,86 +409,158 @@ const AccountContent = () => {
           </h3>
           
           {isLoadingEarnings ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="bg-neutral-800/50 rounded-lg p-4 animate-pulse">
-                  <div className="h-4 bg-neutral-700 rounded w-1/4 mb-2"></div>
-                  <div className="h-3 bg-neutral-700 rounded w-1/3"></div>
-                </div>
-              ))}
+  <div className="space-y-3">
+    {[1, 2, 3].map(i => (
+      <div key={i} className="bg-neutral-800/50 rounded-lg p-4 animate-pulse">
+        <div className="h-4 bg-neutral-700 rounded w-1/4 mb-2"></div>
+        <div className="h-3 bg-neutral-700 rounded w-1/3"></div>
+      </div>
+    ))}
+  </div>
+) : playlistEarnings.length === 0 ? (
+  <div className="text-center py-8 text-neutral-400">
+    <FaMusic className="mx-auto mb-2 text-2xl" />
+    <p>No playlist contributions yet</p>
+    <p className="text-sm">Start adding songs to playlists to earn!</p>
+  </div>
+) : (
+  <div className="space-y-3">
+    {playlistEarnings
+      .sort((a, b) => {
+          return new Date(b.last_updated).getTime() - new Date(a.last_updated).getTime();
+  })
+  .slice(0, 3)
+  .map((earning) => (
+        <div key={earning.playlist_id} className="bg-neutral-800/50 rounded-lg p-4 border border-neutral-700/50">
+          <div className="flex justify-between items-start mb-2">
+            <div className="flex-1">
+              <h4 className="text-white font-medium truncate">{earning.playlist_name}</h4>
+              <div className="flex items-center gap-4 text-sm text-neutral-400 mt-1">
+                <span className="flex items-center gap-1">
+                  <FaMusic className="text-xs" />
+                  {earning.songs_contributed} songs contributed
+                </span>
+                <span>•</span>
+                <span>Total claimed: {earning.total_claimed.toFixed(2)}</span>
+              </div>
             </div>
-          ) : playlistEarnings.length === 0 ? (
-            <div className="text-center py-8 text-neutral-400">
-              <FaMusic className="mx-auto mb-2 text-2xl" />
-              <p>No playlist contributions yet</p>
-              <p className="text-sm">Start adding songs to playlists to earn!</p>
+            <button
+              onClick={() => claimEarnings(earning.playlist_id)}
+              disabled={(earning.claimable_amount || 0) <= 0 || claimingPlaylistId === earning.playlist_id}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm disabled:opacity-50 min-w-[100px] justify-center"
+            >
+              {claimingPlaylistId === earning.playlist_id ? (
+                <FaSync className="animate-spin" />
+              ) : (
+                <FaCoins />
+              )}
+              {earning.claimable_amount && earning.claimable_amount > 0 
+                ? `Claim ${earning.claimable_amount.toFixed(2)}`
+                : 'Claimed'
+              }
+            </button>
+          </div>
+          
+          {/* Progress bar showing entitlement */}
+          <div className="mt-2">
+            <div className="flex justify-between text-xs text-neutral-400 mb-1">
+              <span>Your share: {((earning.share_coefficient || 0) * 100).toFixed(1)}%</span>
+              <span>Entitlement: {(earning.current_entitlement || 0).toFixed(2)}</span>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {playlistEarnings.map((earning) => (
-                <div key={earning.playlist_id} className="bg-neutral-800/50 rounded-lg p-4 border border-neutral-700/50">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex-1">
-                      <h4 className="text-white font-medium truncate">{earning.playlist_name}</h4>
-                      <div className="flex items-center gap-4 text-sm text-neutral-400 mt-1">
-                        <span className="flex items-center gap-1">
-                          <FaMusic className="text-xs" />
-                          {earning.songs_contributed} songs contributed
-                        </span>
-                        <span>•</span>
-                        <span>Total claimed: {earning.total_claimed.toFixed(2)}</span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => claimEarnings(earning.playlist_id)}
-                      disabled={(earning.claimable_amount || 0) <= 0 || claimingPlaylistId === earning.playlist_id}
-                      className="flex items-center gap-2 bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm disabled:opacity-50 min-w-[100px] justify-center"
-                    >
-                      {claimingPlaylistId === earning.playlist_id ? (
-                        <FaSync className="animate-spin" />
-                      ) : (
-                        <FaCoins />
-                      )}
-                      {earning.claimable_amount && earning.claimable_amount > 0 
-                        ? `Claim ${earning.claimable_amount.toFixed(2)}`
-                        : 'Claim'
-                      }
-                    </button>
-                  </div>
+            <div className="w-full bg-neutral-700 rounded-full h-2">
+              {/* <div 
+                className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                style={{ 
+                  width: `${Math.min(100, ((earning.share_coefficient || 0) * 100))}%` 
+                }}
+              ></div> */}
+            </div>
+          </div>
+        </div>
+      ))
+    }
+
+               {playlistEarnings.length > 3 && (
+      <div className="text-center pt-2">
+        <button 
+          onClick={() => {/* You can implement a modal or separate page for all earnings */}}
+          className="text-green-400 hover:text-green-300 text-sm font-medium"
+        >
+          View all {playlistEarnings.length} contributions →
+        </button>
+      </div>
+    )}
+
                   
-                  {/* Progress bar showing entitlement */}
-                  <div className="mt-2">
-                    <div className="flex justify-between text-xs text-neutral-400 mb-1">
-                      <span>Your share: {((earning.share_coefficient || 0) * 100).toFixed(1)}%</span>
-                      <span>Entitlement: {(earning.current_entitlement || 0).toFixed(2)}</span>
-                    </div>
-                    <div className="w-full bg-neutral-700 rounded-full h-2">
-                      <div 
-                        style={{ 
-  width: `${Math.min(100, ((earning.share_coefficient || 0) * 100))}%` 
-}}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-              ))}
             </div>
           )}
         </div>
 
-        {/* Earnings Formula Explanation */}
-        <div className="bg-neutral-800/30 rounded-lg p-4 border border-neutral-700/30">
-          <h4 className="text-white font-medium mb-2 flex items-center gap-2">
-            <FaPlayCircle className="text-green-500" />
-            How Earnings Work
-          </h4>
-          <div className="text-sm text-neutral-400 space-y-1">
-            <p>🎵 <strong>Playlist Value</strong> = (Songs × Minutes) × Collectors × Rating</p>
-            <p>📊 <strong>Your Share</strong> = Songs You Contributed ÷ Total Songs</p>
-            <p>💰 <strong>Your Earnings</strong> = Playlist Value × Your Share</p>
-            <p className="text-green-400 mt-2">You can claim the difference between your current entitlement and what you've already claimed.</p>
-          </div>
-        </div>
+        {/* Metrics Cards */}
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+  {/* Songs Added */}
+  <div className="bg-neutral-800/50 rounded-lg p-4 border border-neutral-700/50">
+    <div className="flex items-center gap-3">
+      <div className="bg-blue-600 p-2 rounded-full">
+        <FaMusic className="text-white text-lg" />
+      </div>
+      <div>
+        <h4 className="text-white font-medium">Songs Added</h4>
+        <p className="text-2xl font-bold text-blue-400">
+          {isLoadingMetrics ? (
+            <div className="animate-pulse">•••</div>
+          ) : (
+            metrics.songsAdded.toLocaleString()
+          )}
+        </p>
+        <p className="text-neutral-400 text-sm">Across all playlists</p>
+      </div>
+    </div>
+  </div>
+
+  {/* Playlists Created */}
+  <div className="bg-neutral-800/50 rounded-lg p-4 border border-neutral-700/50">
+    <div className="flex items-center gap-3">
+      <div className="bg-green-600 p-2 rounded-full">
+        <FaPlus className="text-white text-lg" />
+      </div>
+      <div>
+        <h4 className="text-white font-medium">Playlists Created</h4>
+        <p className="text-2xl font-bold text-green-400">
+          {isLoadingMetrics ? (
+            <div className="animate-pulse">•••</div>
+          ) : (
+            metrics.playlistsCreated.toLocaleString()
+          )}
+        </p>
+        <p className="text-neutral-400 text-sm">Your curated collections</p>
+      </div>
+    </div>
+  </div>
+
+  {/* Playlists Collected */}
+  <div className="bg-neutral-800/50 rounded-lg p-4 border border-neutral-700/50">
+    <div className="flex items-center gap-3">
+      <div className="bg-purple-600 p-2 rounded-full">
+        <FaGem className="text-white text-lg" />
+      </div>
+      <div>
+        <h4 className="text-white font-medium">Playlists Collected</h4>
+        <p className="text-2xl font-bold text-purple-400">
+          {isLoadingMetrics ? (
+            <div className="animate-pulse">•••</div>
+          ) : (
+            metrics.playlistsCollected.toLocaleString()
+          )}
+        </p>
+        <p className="text-neutral-400 text-sm">As NFTs</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
       </div>
 
       <div className="border-t border-neutral-700 pt-6">
@@ -468,10 +570,16 @@ const AccountContent = () => {
             Status: <span className="text-white">Free Tier</span>
           </p>
           <p className="text-neutral-400">
-            Upgrade to Premium for ad-free listening and offline playback
+            Upgrade to Premium for more features
           </p>
           <Button className="w-1/3 mt-2 bg-gradient-to-r from-emerald-500 to-teal-500">
-            Upgrade to Premium
+            Pay With Mana
+          </Button>
+          <Button className="w-1/3 mt-2 bg-gradient-to-r from-emerald-500 to-teal-500">
+            Pay With Hedera
+          </Button>
+          <Button className="w-1/3 mt-2 bg-gradient-to-r from-emerald-500 to-teal-500">
+           Pay With Card
           </Button>
         </div>
       </div>

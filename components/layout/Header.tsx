@@ -10,6 +10,7 @@ import useAuthModal from "@/hooks/useAuthModal";
 import useUploadModal from "@/hooks/useUploadModal";
 import { SearchInput, Button } from "../ui";
 import { useState } from "react";
+import Image from "next/image";
 
 interface HeaderProps {
     children?: React.ReactNode;
@@ -57,7 +58,7 @@ const Header: React.FC<HeaderProps> = ({ children, className }) => {
                 {/* Navigation buttons */}
                 <div className="hidden md:flex gap-x-8 items-center">
                     <a href="#" className="flex-shrink-0">
-                        <img
+                        <Image
                             src="https://res.cloudinary.com/dqhawdcol/image/upload/v1758379129/hkyfzlvauys6paoqo6on.png"
                             alt="Shamana"
                             className="max-w-[180px] h-full"

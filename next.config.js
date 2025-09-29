@@ -24,6 +24,11 @@ const nextConfig = {
         port: '',
         pathname: '/ipfs/**',
       },  
+        {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        pathname: '/**',
+      },
     ]
   },
    webpack: (config, { isServer }) => {

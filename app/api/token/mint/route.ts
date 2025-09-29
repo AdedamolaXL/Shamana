@@ -3,6 +3,8 @@ import { mintFungible } from "@/lib/hedera-tokens";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
   try {
     const { userId, tokenId, amount, playlistId, claimType } = await req.json();

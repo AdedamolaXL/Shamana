@@ -3,6 +3,8 @@ import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { AccountBalanceQuery, Client, TokenId, AccountId } from "@hashgraph/sdk";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
   try {
     const supabase = createRouteHandlerClient({ cookies });

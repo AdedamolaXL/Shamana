@@ -37,7 +37,8 @@ export class EarningsCalculator {
     // Calculate total songs and minutes
     const songsCount = playlist.playlist_songs?.length || 0;
     const totalSeconds = playlist.playlist_songs?.reduce((total, ps) => {
-  return total + (ps.songs?.duration || 0);
+   const songData = Array.isArray(ps.songs) ? ps.songs[0] : ps.songs;
+      return total + (songData?.duration || 0);
 }, 0) || 0;
     const totalMinutes = totalSeconds / 60;
 

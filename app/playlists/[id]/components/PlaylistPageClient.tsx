@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { PlaylistWithSongs, Song } from "@/types";
 import { FaMusic, FaBookmark, FaHeart, FaPlay, FaClock, FaCrown, FaPause, FaGem } from "react-icons/fa";
@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { useUser } from "@/hooks/useUser";
 import useOnPlay from "@/hooks/useOnPlay";
 import usePlayer from "@/hooks/usePlayer";
+import Image from "next/image";
 
 interface PlaylistPageClientProps {
   playlist: PlaylistWithSongs;
@@ -51,160 +52,55 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
   const player = usePlayer();
   const onPlay = useOnPlay(allSongs);
 
-   useEffect(() => {
+useEffect(() => {
     const pulseTimer = setTimeout(() => {
       setIsPulsing(false);
-    }, 10000); // Stop pulsing after 10 seconds
+    }, 10000);
 
     return () => clearTimeout(pulseTimer);
   }, []);
   
 
-   useEffect(() => {
-    // Check if the current playlist is being played
+  useEffect(() => {
     const isPlaylistActive = currentPlaylist.playlist_songs?.some(
       ps => ps.songs.id === player.activeId
     );
     
     setIsPlayingPlaylist(Boolean(isPlaylistActive && player.activeId !== undefined));
-   }, [player.activeId, currentPlaylist.playlist_songs]);
+  }, [player.activeId, currentPlaylist.playlist_songs]);
 
-  // Fetch contributors when component mounts
-  useEffect(() => {
-    const fetchContributors = async () => {
-      if (!currentPlaylist.id) return;
-      
-      try {
-        setIsLoadingContributors(true);
-        const response = await fetch(`/api/playlists/${currentPlaylist.id}/contributors`);
-        if (response.ok) {
-          const data = await response.json();
-          setContributors(data.contributors || []);
-        } else {
-          console.error('Failed to fetch contributors');
-          // Fallback: create basic contributor list from available data
-          setContributors(getFallbackContributors());
-        }
-      } catch (error) {
-        console.error('Error fetching contributors:', error);
-        setContributors(getFallbackContributors());
-      } finally {
-        setIsLoadingContributors(false);
-      }
-    };
-
-    fetchContributors();
-  }, [currentPlaylist.id]);
-
-  const handleCollectClick = () => {
-    setIsPulsing(true);
-    // Restart the timer
-    setTimeout(() => setIsPulsing(false), 10000);
-    handleSavePlaylist();
-  };
-
-  const getFallbackContributors = (): Contributor[] => {
+    const getCreatorName = useCallback(() => {
+    if (currentPlaylist.user?.username) return currentPlaylist.user.username;
+    if (currentPlaylist.user?.email) return currentPlaylist.user.email.split("@")[0];
+    return "Anonymous";
+    }, [currentPlaylist.user])
+  
+   const getFallbackContributors = useCallback((): Contributor[] => {
     const contributors: Contributor[] = [];
     
-    // Add original curator
     if (currentPlaylist.user) {
       contributors.push({
         id: currentPlaylist.user_id,
         username: getCreatorName(),
         email: currentPlaylist.user.email || '',
         is_curator: true,
-        songs_added: currentPlaylist.playlist_songs?.length || 0 // Estimate all songs added by curator initially
+        songs_added: currentPlaylist.playlist_songs?.length || 0
       });
     }
     
     return contributors;
-  };
+  }, [currentPlaylist.user, currentPlaylist.user_id, currentPlaylist.playlist_songs?.length, getCreatorName]);
 
-  
-
-  // Check if current user has collected this playlist and get collection count
-  useEffect(() => {
-    setCurrentPlaylist(playlist);
-    checkIfCollected();
-    fetchCollectionCount();
-    fetchReputationData();
-    checkUserVote();
-  }, [playlist, user]);
-
-  useEffect(() => {
-  const interval = setInterval(() => {
-    if (playlist.id) {
-      fetchCollectionCount();
-    }
-  }, 10000); // Check every 10 seconds
-
-  return () => clearInterval(interval);
-  }, [playlist.id]);
-  
-  // Get playlist songs for playing
-  const getPlaylistSongs = (): Song[] => {
+    const getPlaylistSongs = useCallback((): Song[] => {
     if (!currentPlaylist.playlist_songs) return [];
     
     return currentPlaylist.playlist_songs
       .sort((a, b) => (a.position || 0) - (b.position || 0))
       .map(ps => ps.songs)
       .filter(song => song !== undefined) as Song[];
-  };
-
-    // Handle playlist play/pause
-   const handlePlayPausePlaylist = () => {
-    const playlistSongs = getPlaylistSongs();
-    
-    if (playlistSongs.length === 0) {
-      toast.error("No songs in playlist to play");
-      return;
-    }
-
-    const playlistSongIds = playlistSongs.map(song => song.id);
-
-    if (isPlayingPlaylist) {
-      // Pause playback
-      player.setIsPlaying(false);
-      setIsPlayingPlaylist(false);
-      console.log("Pausing playlist playback");
-      toast("Playlist paused");
-    } else {
-      // If we're already on a song from this playlist, just resume
-      if (player.activeId && playlistSongIds.includes(player.activeId)) {
-        player.setIsPlaying(true);
-        setIsPlayingPlaylist(true);
-        setIsControllingPlaylist(true);
-        toast("Resuming playlist");
-      } else {
-        // Start playing the playlist from the beginning
-        player.setIds(playlistSongIds);
-        const firstSongId = playlistSongIds[0];
-        player.setId(firstSongId);
-        player.setIsPlaying(true);
-        setIsPlayingPlaylist(true);
-        setIsControllingPlaylist(true);
-        toast.success(`Playing playlist: ${currentPlaylist.name}`);
-      }
-    }
-   };
+    }, [currentPlaylist.playlist_songs]);
   
-   // Handle when user clicks on individual songs
-  const handleSongClick = (songId: string) => {
-    const playlistSongs = getPlaylistSongs();
-    const playlistSongIds = playlistSongs.map(song => song.id);
-    
-    // If this song is part of the current playlist, we're now controlling the playlist
-    if (playlistSongIds.includes(songId)) {
-      setIsControllingPlaylist(true);
-      player.setIds(playlistSongIds);
-    }
-    
-    // Play the specific song
-    onPlay(songId);
-  };
-
-
-  const fetchReputationData = async () => {
+    const fetchReputationData = useCallback(async () => {
     if (!playlist.id) return;
 
     try {
@@ -222,9 +118,10 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
     } catch (error) {
       console.error("Error fetching reputation data:", error);
     }
-  };
-
-   const checkUserVote = async () => {
+    }, [playlist.id]);
+  
+  
+   const checkUserVote = useCallback(async () => {
     if (!user || !playlist.id) {
       setUserVote(null);
       return;
@@ -249,50 +146,178 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
     } catch (error) {
       console.error("Error checking user vote:", error);
     }
-  };
+   }, [user, playlist.id]);
+  
+  
+  const checkIfCollected = useCallback(async () => {
+    if (!user || !playlist.id) {
+      setIsCollected(false);
+      return;
+    }
 
-  // Update the checkIfCollected function to be more robust
-const checkIfCollected = async () => {
-  if (!user || !playlist.id) {
-    setIsCollected(false);
-    return;
-  }
-
-  try {
-    const response = await fetch(`/api/nft/check-collection?playlistId=${playlist.id}&userId=${user.id}`);
-    if (response.ok) {
-      const data = await response.json();
-      console.log('Collection check data:', data); // Debug log
-      setIsCollected(data.collected);
-    } else {
-      console.error('Failed to check collection status');
+    try {
+      const response = await fetch(`/api/nft/check-collection?playlistId=${playlist.id}&userId=${user.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Collection check data:', data);
+        setIsCollected(data.collected);
+      } else {
+        console.error('Failed to check collection status');
+        setIsCollected(false);
+      }
+    } catch (error) {
+      console.error("Error checking collection status:", error);
       setIsCollected(false);
     }
-  } catch (error) {
-    console.error("Error checking collection status:", error);
-    setIsCollected(false);
-  }
-};
+  }, [user, playlist.id]);
 
- // Update the fetchCollectionCount function
-const fetchCollectionCount = async () => {
-  if (!currentPlaylist.id) return;
 
-  try {
-    const response = await fetch(`/api/nft/collection-count?playlistId=${currentPlaylist.id}`);
-    if (response.ok) {
-      const data = await response.json();
-      console.log('Collection count data:', data); // Debug log
-      setCollectionCount(data.count || 0);
-    } else {
-      console.error('Failed to fetch collection count');
+  const fetchCollectionCount = useCallback(async () => {
+    if (!currentPlaylist.id) return;
+
+    try {
+      const response = await fetch(`/api/nft/collection-count?playlistId=${currentPlaylist.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Collection count data:', data);
+        setCollectionCount(data.count || 0);
+      } else {
+        console.error('Failed to fetch collection count');
+        setCollectionCount(0);
+      }
+    } catch (error) {
+      console.error("Error fetching collection count:", error);
       setCollectionCount(0);
     }
-  } catch (error) {
-    console.error("Error fetching collection count:", error);
-    setCollectionCount(0);
-  }
-};
+  }, [currentPlaylist.id]);
+ 
+
+
+  // Fetch contributors when component mounts
+  useEffect(() => {
+    const fetchContributors = async () => {
+      if (!currentPlaylist.id) return;
+      
+      try {
+        setIsLoadingContributors(true);
+        const response = await fetch(`/api/playlists/${currentPlaylist.id}/contributors`);
+        if (response.ok) {
+          const data = await response.json();
+          setContributors(data.contributors || []);
+        } else {
+          console.error('Failed to fetch contributors');
+          setContributors(getFallbackContributors());
+        }
+      } catch (error) {
+        console.error('Error fetching contributors:', error);
+        setContributors(getFallbackContributors());
+      } finally {
+        setIsLoadingContributors(false);
+      }
+    };
+
+    fetchContributors();
+  }, [currentPlaylist.id, getFallbackContributors]);
+
+
+    useEffect(() => {
+    setCurrentPlaylist(playlist);
+    checkIfCollected();
+    fetchCollectionCount();
+    fetchReputationData();
+    checkUserVote();
+  }, [playlist, user, checkIfCollected, fetchCollectionCount, fetchReputationData, checkUserVote]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (playlist.id) {
+        fetchCollectionCount();
+      }
+    }, 10000);
+
+
+    return () => clearInterval(interval);
+  }, [playlist.id, fetchCollectionCount]);
+
+    useEffect(() => {
+    const playlistSongs = getPlaylistSongs();
+    const playlistSongIds = playlistSongs.map(song => song.id);
+    
+    const isPlaylistActive = player.activeId && playlistSongIds.includes(player.activeId);
+    const isPlayingThisPlaylist = isPlaylistActive && player.isPlaying;
+    
+    setIsPlayingPlaylist(Boolean(isPlayingThisPlaylist));
+    
+    if (isControllingPlaylist && player.activeId && !playlistSongIds.includes(player.activeId)) {
+      setIsControllingPlaylist(false);
+    }
+  }, [player.activeId, player.isPlaying, currentPlaylist.playlist_songs, isControllingPlaylist, getPlaylistSongs]);
+
+  const handleCollectClick = () => {
+    setIsPulsing(true);
+    setTimeout(() => setIsPulsing(false), 10000);
+    handleSavePlaylist();
+  };
+  
+
+    // Handle playlist play/pause
+  
+  const handlePlayPausePlaylist = () => {
+    const playlistSongs = getPlaylistSongs();
+    
+    if (playlistSongs.length === 0) {
+      toast.error("No songs in playlist to play");
+      return;
+    }
+
+    const playlistSongIds = playlistSongs.map(song => song.id);
+
+    if (isPlayingPlaylist) {
+      player.setIsPlaying(false);
+      setIsPlayingPlaylist(false);
+      toast("Playlist paused");
+    } else {
+      if (player.activeId && playlistSongIds.includes(player.activeId)) {
+        player.setIsPlaying(true);
+        setIsPlayingPlaylist(true);
+        setIsControllingPlaylist(true);
+        toast("Resuming playlist");
+      } else {
+        player.setIds(playlistSongIds);
+        const firstSongId = playlistSongIds[0];
+        player.setId(firstSongId);
+        player.setIsPlaying(true);
+        setIsPlayingPlaylist(true);
+        setIsControllingPlaylist(true);
+        toast.success(`Playing playlist: ${currentPlaylist.name}`);
+      }
+    }
+  };
+  
+  
+   // Handle when user clicks on individual songs
+  const handleSongClick = (songId: string) => {
+    const playlistSongs = getPlaylistSongs();
+    const playlistSongIds = playlistSongs.map(song => song.id);
+    
+    // If this song is part of the current playlist, we're now controlling the playlist
+    if (playlistSongIds.includes(songId)) {
+      setIsControllingPlaylist(true);
+      player.setIds(playlistSongIds);
+    }
+    
+    // Play the specific song
+    onPlay(songId);
+  };
+
+
+ 
+
+
+
+  
+
+
 
     const handleVote = async (voteType: 'upvote' | 'downvote') => {
   if (!user) {
@@ -426,13 +451,6 @@ const fetchCollectionCount = async () => {
         return `${minutes}m`;
     }
 };
-
-  // Get creator name
-  const getCreatorName = () => {
-    if (currentPlaylist.user?.username) return currentPlaylist.user.username;
-    if (currentPlaylist.user?.email) return currentPlaylist.user.email.split("@")[0];
-    return "Anonymous";
-  };
 
   // Check if current user is the creator
   const isCreator = user && currentPlaylist.user_id === user.id;
@@ -592,7 +610,7 @@ const fetchCollectionCount = async () => {
     if (isControllingPlaylist && player.activeId && !playlistSongIds.includes(player.activeId)) {
       setIsControllingPlaylist(false);
     }
-  }, [player.activeId, player.isPlaying, currentPlaylist.playlist_songs, isControllingPlaylist]);
+  }, [player.activeId, player.isPlaying, currentPlaylist.playlist_songs, isControllingPlaylist, getPlaylistSongs]);
 
   const toggleCommentLike = (id: number) => setCommentLikes(prev => ({...prev, [id]: !prev[id]}));
 
@@ -683,7 +701,7 @@ const fetchCollectionCount = async () => {
         <div className="flex-[3] flex flex-col gap-8">
           <div className="bg-[#111] rounded-xl p-5">
             <div className="flex gap-2 mb-5">
-              <img 
+              <Image 
                 src="https://res.cloudinary.com/dqhawdcol/image/upload/v1758202400/e9ifs1tewfgemgxfc5kc.jpg" 
                 alt="You" 
                 className="w-10 h-10 rounded-full object-cover shrink-0" 
@@ -830,7 +848,7 @@ const fetchCollectionCount = async () => {
   ].map(comment => (
     <div key={comment.id} className="comment flex gap-3 mb-6">
       {/* Avatar */}
-      <img
+      <Image
         src="https://res.cloudinary.com/dqhawdcol/image/upload/v1758202400/e9ifs1tewfgemgxfc5kc.jpg"
         alt="User"
         className="comment-avatar w-10 h-10 rounded-full object-cover shrink-0"
