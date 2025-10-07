@@ -61,6 +61,8 @@ const Header: React.FC<HeaderProps> = ({ children, className }) => {
                         <Image
                             src="https://res.cloudinary.com/dqhawdcol/image/upload/v1758379129/hkyfzlvauys6paoqo6on.png"
                             alt="Shamana"
+                            width={140}
+                            height={140}
                             className="max-w-[180px] h-full"
                         />
                     </a>

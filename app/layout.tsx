@@ -1,13 +1,13 @@
 import { Work_Sans } from 'next/font/google'
 import type { Metadata } from 'next'
-import './globals.css'
+import '@/app/globals.css'
+import ToasterProvider from '@/providers/ToasterProvider'
 import SupabaseProvider from '@/providers/SupabaseProvider'
 import UserProvider from '@/providers/UserProvider'
 import ModalProvider from '@/providers/ModalProvider'
-import ToasterProvider from '@/providers/ToasterProvider'
-import getSongsByUserId from '@/actions/getSongsByUserId'
-import Player from '@/components/layout/Player'
 import Header from '@/components/layout/Header'
+import Player from '@/components/layout/Player'
+
 
 const workSans = Work_Sans({ 
   subsets: ['latin'],
@@ -27,7 +27,6 @@ export default async function RootLayout({
 }: {
     children: React.ReactNode
 }) {
-    const userSongs = await getSongsByUserId();
 
     return (
         <html lang="en" className={workSans.variable}>

@@ -704,7 +704,9 @@ useEffect(() => {
               <Image 
                 src="https://res.cloudinary.com/dqhawdcol/image/upload/v1758202400/e9ifs1tewfgemgxfc5kc.jpg" 
                 alt="You" 
-                className="w-10 h-10 rounded-full object-cover shrink-0" 
+                width={40}
+                height={40}
+                className="rounded-full object-cover shrink-0" 
               />
               <input 
                 type="text" 
@@ -851,7 +853,9 @@ useEffect(() => {
       <Image
         src="https://res.cloudinary.com/dqhawdcol/image/upload/v1758202400/e9ifs1tewfgemgxfc5kc.jpg"
         alt="User"
-        className="comment-avatar w-10 h-10 rounded-full object-cover shrink-0"
+        width={60}
+        height={60}
+        className="comment-avatar rounded-full object-cover shrink-0"
       />
       {/* Content */}
       <div className="comment-content flex-1">

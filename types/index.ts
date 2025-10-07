@@ -64,12 +64,6 @@ export interface PlaylistSong {
   added_at?: string;
 }
 
-export interface LikedSong {
-  user_id: string;
-  song_id: string;
-  created_at?: string;
-}
-
 export interface Contributor {
   id: string;
   username: string;
