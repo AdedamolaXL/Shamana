@@ -5,15 +5,16 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import useAuthModal from "@/hooks/useAuthModal";
 import toast from "react-hot-toast";
-import { Modal } from "@/components/ui"
-import { Auth } from "@supabase/auth-ui-react"
-import { ThemeSupa } from "@supabase/auth-ui-shared"
+import { Modal } from "@/components/ui";
+import { Auth } from "@supabase/auth-ui-react";
+import { ThemeSupa } from "@supabase/auth-ui-shared";
+import { AuthModalView } from "@/hooks/useAuthModal";
 
 const AuthModal = () => {
     const supabaseClient = useSupabaseClient();
     const router = useRouter();
     const { session } = useSessionContext();
-    const { onClose, isOpen } = useAuthModal();
+    const { onClose, isOpen, view, setView } = useAuthModal();
     const [isInitializing, setIsInitializing] = useState(false);
     const [initializedUsers, setInitializedUsers] = useState<Set<string>>(new Set());
 
@@ -131,18 +132,28 @@ const AuthModal = () => {
         };
     }, []);
 
+    // handle switching between sign in and sign up views
+    const handleAuthViewChange = (view: string) => {
+        if (view === "sign_in") {
+            setView("sign_up");
+        
+        } else if (view === "sign_up") {
+            setView("sign_up");
+        }
+    };
+
     return (
         <Modal 
-            title="Welcome to Shamana" 
-            description="Sign in to your account to continue" 
+            title={view === "sign_in" ? "Welcome back to Shamana" : "Welcome to Shamana" }
+            description={view === "sign_in" ? "Sign in to your account to continue" : "Create your account to get started" }
             isOpen={isOpen} 
             onChange={onChange}
         >
-            <Auth 
-                theme="dark" 
-                magicLink 
-                providers={["google"]} // fix google auth
-                supabaseClient={supabaseClient}  
+            <Auth
+                theme="dark"
+                magicLink
+                providers={[]}
+                supabaseClient={supabaseClient}
                 appearance={{
                     theme: ThemeSupa,
                     variables: {
@@ -154,6 +165,28 @@ const AuthModal = () => {
                         }
                     }
                 }}
+
+    view={view === "sign_in" ? "sign_in" : "sign_up"}
+    localization={{
+        variables: {
+            sign_in: {
+                email_label: 'Email',
+                password_label: 'Password',
+                button_label: 'Sign In',
+                loading_button_label: 'Signing In...',
+                social_provider_text: 'Sign in with {{provider}}',
+                link_text: 'Already have an account? Sign in'
+            },
+            sign_up: {
+                email_label: 'Email',
+                password_label: 'Password',
+                button_label: 'Sign Up',
+                loading_button_label: 'Signing Up...',
+                social_provider_text: 'Sign up with {{provider}}',
+                link_text: "Don't have an account? Sign up"
+            }
+        }
+    }}
             /> 
         </Modal>
     );

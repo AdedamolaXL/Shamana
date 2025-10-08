@@ -29,6 +29,7 @@ export const MyUserContextProvider = (props: Props) => {
     const [isLoadingData, setIsLoadingData] = useState(false);
     const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
     
+    // fetch user details from 'users' table
     const getUserDetails = async () => {
         if (!user?.id) return { data: null, error: new Error('No user ID') };
         
@@ -39,7 +40,7 @@ export const MyUserContextProvider = (props: Props) => {
             .single();
     };
    
-
+    // fetch user details when user or loading state changes
     useEffect(() => {
         const fetchUserData = async () => {
             if (user && !isLoadingData && !userDetails ) {
@@ -82,6 +83,7 @@ export const MyUserContextProvider = (props: Props) => {
         fetchUserData();
     }, [user, isLoadingUser]);
 
+    // context value
     const value = {
         accessToken,
         user,
