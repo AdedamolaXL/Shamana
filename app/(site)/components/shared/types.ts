@@ -1,0 +1,25 @@
+import { PlaylistWithSongs, Song } from "@/types";
+import { Session } from "@supabase/auth-helpers-nextjs";
+
+export interface ActivityItem {
+  type: "playlist";
+  user: string;
+  action: string;
+  playlistName: string;
+  details: string;
+  playlistId?: string;
+  timestamp: string;
+  playlist?: PlaylistWithSongs;
+  songs?: string[];
+}
+
+export interface HomeClientProps {
+  session: Session | null;
+  initialPlaylists: PlaylistWithSongs[];
+  initialSongs: Song[];
+}
+
+export interface ErrorState {
+  message: string;
+  type?: 'tribes' | 'playlists' | 'songs';
+}

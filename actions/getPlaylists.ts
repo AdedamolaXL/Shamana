@@ -3,9 +3,7 @@ import { cookies } from "next/headers";
 import { PlaylistWithSongs } from "@/types";
 
 export const getPlaylists = async (): Promise<PlaylistWithSongs[]> => {
-  const supabase = createServerComponentClient({
-    cookies: cookies
-  });
+  const supabase = createServerComponentClient({cookies: cookies});
 
   // Get all playlists with user information
   const { data, error } = await supabase

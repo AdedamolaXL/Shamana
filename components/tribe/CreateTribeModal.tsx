@@ -23,6 +23,7 @@ const CreateTribeModal: React.FC<CreateTribeModalProps> = ({
   const { user } = useUser();
   const router = useRouter();
 
+  // Destructure setValue from useForm
   const {
     register,
     handleSubmit,
@@ -36,7 +37,10 @@ const CreateTribeModal: React.FC<CreateTribeModalProps> = ({
     },
   });
 
+  // Handle form submission
   const onSubmit: SubmitHandler<FieldValues> = async (values) => {
+    
+    // Prevent multiple submissions
     try {
       setIsLoading(true);
 
@@ -58,10 +62,6 @@ const CreateTribeModal: React.FC<CreateTribeModalProps> = ({
         }),
       });
 
-
-
-
-
     const data = await response.json();
 
     if (!response.ok) {
@@ -76,7 +76,6 @@ const CreateTribeModal: React.FC<CreateTribeModalProps> = ({
         onTribeCreated();
       }
       
-      // Redirect to the new tribe page
           router.push(`/tribes/${data.id}`);
     } catch (error: any) {
       toast.error(error.message || "Something went wrong");

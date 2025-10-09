@@ -33,6 +33,8 @@ const AuthModal = () => {
 
     // user initializion logic
     useEffect(() => {
+
+        // function to initialize user
         const initializeUser = async () => {
             if (session && session.user && session.user.id && !isInitializing) {
                 if (initializedUsers.has(session.user.id)) {

@@ -3,7 +3,6 @@ import { useState, useEffect } from "react"; // Add useEffect
 import { useRouter } from "next/navigation";
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
-
 import { Modal } from "../ui"
 import { Input } from "../ui";
 import { Button } from "../ui";
@@ -13,19 +12,20 @@ interface CreatePlaylistModalProps {
   isOpen: boolean;
   onChange: (open: boolean) => void;
   onPlaylistCreated?: (playlistId: string) => void;
-  defaultName?: string; // Add this prop
+  defaultName?: string; 
 }
 
 const CreatePlaylistModal: React.FC<CreatePlaylistModalProps> = ({
   isOpen,
   onChange,
   onPlaylistCreated,
-  defaultName = "" // Add default value
+  defaultName = "" 
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useUser();
   const router = useRouter();
 
+  // Destructure setValue from useForm
   const {
     register,
     handleSubmit,
@@ -46,7 +46,10 @@ const CreatePlaylistModal: React.FC<CreatePlaylistModalProps> = ({
     }
   }, [defaultName, setValue]);
 
+  // Handle form submission
   const onSubmit: SubmitHandler<FieldValues> = async (values) => {
+    
+    // Prevent multiple submissions
     try {
       setIsLoading(true);
 
@@ -55,7 +58,6 @@ const CreatePlaylistModal: React.FC<CreatePlaylistModalProps> = ({
         return;
       }
 
-      // Call your API route instead of using Supabase directly
       const response = await fetch('/api/playlists/create', {
         method: 'POST',
         headers: {

@@ -1,7 +1,7 @@
+import { cookies } from "next/headers";
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { getPlaylists } from "@/actions/getPlaylists";
 import getSongs from "@/actions/getSongs";
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
 import HomeClient from "./components/HomeClient";
 
 export const revalidate = 0;
@@ -9,8 +9,6 @@ export const revalidate = 0;
 export default async function Home() {
   const supabase = createServerComponentClient({ cookies });
   const { data: { session } } = await supabase.auth.getSession();
-  
-  // Get the latest playlists and songs
   const allPlaylists = await getPlaylists();
   const allSongs = await getSongs();
 
