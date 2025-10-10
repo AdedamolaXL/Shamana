@@ -7,6 +7,7 @@ import { HeroCarousel } from "./HeroCarousel/HeroCarousel";
 import { ActivityFeed } from "./ActivityFeed/ActivityFeed";
 import { Sidebar } from "./Sidebar/Sidebar";
 import { HomeClientProps, ActivityItem, ErrorState } from "./shared/types";
+import { usePlaylistPlayback } from "@/hooks/usePlaylistPlayback";
 
 const HomeClient: React.FC<HomeClientProps> = ({ 
   session, 
@@ -19,20 +20,21 @@ const HomeClient: React.FC<HomeClientProps> = ({
   const [songs, setSongs] = useState(initialSongs);
   const [recentActivities, setRecentActivities] = useState<ActivityItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [playingStates, setPlayingStates] = useState<{ [key: string]: boolean }>({});
   const router = useRouter();
   const onPlay = useOnPlay(songs);
   const [error, setError] = useState<ErrorState | null>(null);
+
+  // Use the new playlist playback hook
+  const { playingStates, playPlaylist, isPlaylistPlaying } = usePlaylistPlayback({ 
+    songs 
+  });
 
   const handleCreatePlaylist = () => {
     setIsCreateModalOpen(true);
   };
 
-  const togglePlayState = (playlistId: string) => {
-    setPlayingStates(prev => ({
-      ...prev,
-      [playlistId]: !prev[playlistId]
-    }));
+  const handlePlaylistPlay = (playlistId: string, firstSongId: string) => {
+    playPlaylist(playlistId, firstSongId);
   };
 
   const slides = useMemo(() => [
@@ -165,8 +167,9 @@ const HomeClient: React.FC<HomeClientProps> = ({
           error={error}
           onPlaylistClick={handlePlaylistClick}
           onPlaySong={onPlay}
+          onPlaylistPlay={handlePlaylistPlay} // New prop
           playingStates={playingStates}
-          onTogglePlayState={togglePlayState}
+          isPlaylistPlaying={isPlaylistPlaying} // New prop
         />
         
         <Sidebar isLoading={isLoading} />

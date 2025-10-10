@@ -3,9 +3,7 @@ import Image from "next/image"
 import { useState } from "react"
 import useLoadImage from "@/hooks/useLoadImage"
 import { Song } from "@/types"
-import PlayButton from "./PlayButton"
 import { FaMusic } from "react-icons/fa"
-import { AddToPlaylistButton } from "../playlist"
 
 interface MediaItemProps {
     data: Song;

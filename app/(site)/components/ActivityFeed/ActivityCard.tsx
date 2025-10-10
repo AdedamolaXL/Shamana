@@ -10,10 +10,22 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
   index,
   onPlaylistClick,
   onPlaySong,
-  isPlaying,
-  onTogglePlayState,
+  onPlaylistPlay,
+  isPlaylistPlaying,
 }) => {
-  const gradientIndex = index % 10; // Using 10 gradients from the palette
+  const gradientIndex = index % 10;
+  const playlistId = activity.playlist?.id;
+  const isPlaying = playlistId ? isPlaylistPlaying(playlistId) : false;
+
+  // Function to handle play button click
+  const handlePlayButtonClick = () => {
+    if (playlistId) {
+      const firstSong = activity.playlist?.playlist_songs?.[0]?.songs;
+      if (firstSong?.id) {
+        onPlaylistPlay(playlistId, firstSong.id);
+      }
+    }
+  };
 
   return (
     <div 
@@ -22,12 +34,12 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
         focus-within:bg-[#222] focus-within:shadow-xl focus-within:shadow-purple-500/10
         border border-transparent hover:border-gray-700 focus-within:border-gray-700
         cursor-pointer group relative overflow-hidden"
-      onClick={() => activity.playlist && onPlaylistClick(activity.playlist.id)}
+      onClick={() => playlistId && onPlaylistClick(playlistId)}
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          activity.playlist && onPlaylistClick(activity.playlist.id);
+          playlistId && onPlaylistClick(playlistId);
         }
       }}
     >
@@ -60,8 +72,8 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
         gradientIndex={gradientIndex}
         isPlaying={isPlaying}
         songCount={activity.songs?.length || 0}
-        onThumbnailClick={() => activity.playlist && onPlaylistClick(activity.playlist.id)}
-        onTogglePlay={() => activity.playlist?.id && onTogglePlayState(activity.playlist.id)}
+        onThumbnailClick={() => playlistId && onPlaylistClick(playlistId)}
+        onTogglePlay={handlePlayButtonClick}
       />
 
       <div className="mb-4 relative z-10">

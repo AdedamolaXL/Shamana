@@ -16,8 +16,8 @@ export interface ActivityCardProps {
   index: number;
   onPlaylistClick: (playlistId: string) => void;
   onPlaySong: (songId: string) => void;
-  isPlaying: boolean;
-  onTogglePlayState: (playlistId: string) => void;
+  onPlaylistPlay: (playlistId: string, firstSongId: string) => void; 
+  isPlaylistPlaying: (playlistId: string) => boolean; 
 }
 
 export interface SongListProps {

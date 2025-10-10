@@ -55,18 +55,23 @@ const Player = () => {
     }, [activeSong, supabase, player]);
 
     if (isLoading) {
-        return (
-            <div className='fixed bottom-0 bg-black w-full py-4 h-[90px] px-6 flex items-center justify-center border-t border-neutral-800'>
-                <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-neutral-800 rounded-lg animate-pulse"></div>
-                    <div className="flex flex-col gap-2">
-                        <div className="h-4 bg-neutral-800 rounded w-32 animate-pulse"></div>
-                        <div className="h-3 bg-neutral-800 rounded w-24 animate-pulse"></div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+  return (
+    <div className='fixed bottom-0 bg-gradient-to-r from-black to-neutral-900 w-full py-4 h-[90px] px-6 flex items-center justify-center border-t border-neutral-700 shadow-xl'>
+      <div className="flex items-center gap-4 w-full max-w-4xl">
+        <div className="w-14 h-14 bg-gradient-to-r from-neutral-700 to-neutral-800 rounded-lg animate-pulse shadow-md"></div>
+        <div className="flex flex-col gap-2 flex-1">
+          <div className="h-4 bg-neutral-700 rounded w-40 animate-pulse"></div>
+          <div className="h-3 bg-neutral-700 rounded w-28 animate-pulse"></div>
+        </div>
+        <div className="flex items-center gap-6">
+          <div className="w-8 h-8 bg-neutral-700 rounded-full animate-pulse"></div>
+          <div className="w-8 h-8 bg-neutral-700 rounded-full animate-pulse"></div>
+          <div className="w-24 h-2 bg-neutral-700 rounded-full animate-pulse"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
     if (!activeSong && !randomSong) {
         return null;
@@ -76,13 +81,14 @@ const Player = () => {
     const currentSongUrl = songUrl || '';
 
     return (
-        <div className='fixed bottom-0 bg-black w-full py-4 h-[90px] px-6 border-t border-neutral-800 shadow-2xl player-gradient'>
-            <PlayerContent 
-                song={currentSong!} 
-                songUrl={currentSongUrl} 
-                key={currentSongUrl} 
-            />
-        </div>
+            <div className='fixed bottom-0 bg-gradient-to-t from-neutral-900 to-neutral-800 w-full py-4 h-[90px] px-6 border-t border-neutral-700 shadow-2xl z-50'>
+    <PlayerContent 
+      song={currentSong!} 
+      songUrl={currentSongUrl} 
+      key={currentSongUrl} 
+    />
+  </div>
+
     );
 }
 

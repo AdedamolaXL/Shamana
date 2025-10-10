@@ -9,8 +9,9 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
   error,
   onPlaylistClick,
   onPlaySong,
+  onPlaylistPlay, // New prop
   playingStates,
-  onTogglePlayState,
+  isPlaylistPlaying, // New prop
 }) => {
   if (isLoading) {
     return (
@@ -37,8 +38,8 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
           index={index}
           onPlaylistClick={onPlaylistClick}
           onPlaySong={onPlaySong}
-          isPlaying={playingStates[activity.playlist?.id || index]}
-          onTogglePlayState={onTogglePlayState}
+          onPlaylistPlay={onPlaylistPlay} // Pass new prop
+          isPlaylistPlaying={isPlaylistPlaying} // Pass new prop
         />
       ))}
     </div>

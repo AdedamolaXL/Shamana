@@ -4,7 +4,6 @@ import { AiFillStepBackward, AiFillStepForward } from "react-icons/ai";
 import { HiSpeakerXMark, HiSpeakerWave } from "react-icons/hi2";
 import { useEffect, useState, useCallback } from "react";
 import useSound from "use-sound"
-
 import { Song } from "@/types";
 import MediaItem from "./MediaItem";
 import LikeButton from "./LikeButton";
@@ -18,7 +17,6 @@ interface PlayerContentProps {
     songUrl: string;
 }
 
-// Add this function to handle IPFS URLs
 const sanitizeUrl = (url: string) => {
   if (url.startsWith('ipfs://')) {
     return url.replace('ipfs://', process.env.NEXT_PUBLIC_PINATA_GATEWAY_URL + '/ipfs/');
@@ -28,18 +26,15 @@ const sanitizeUrl = (url: string) => {
 
 const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
     const player = usePlayer();
-    const [volume, setVolume] = useState(1);
-    const [isPlaying, setIsPlaying] = useState(false);
     const [showQueue, setShowQueue] = useState(false);
     const [queueSongs, setQueueSongs] = useState<Song[]>([]);
     const [isLoadingQueue, setIsLoadingQueue] = useState(false);
     const [shuffleMode, setShuffleMode] = useState(false);
     const supabaseClient = useSupabaseClient();
 
-    const Icon = isPlaying ? BsPauseFill : BsPlayFill;
-    const VolumeIcon = volume === 0 ? HiSpeakerXMark : HiSpeakerWave;
+    const Icon = player.isPlaying ? BsPauseFill : BsPlayFill;
+    const VolumeIcon = player.volume === 0 ? HiSpeakerXMark : HiSpeakerWave;
 
-    // Define fetchQueueSongs with useCallback BEFORE the useEffect
     const fetchQueueSongs = useCallback(async (songIds: string[]) => {
         if (songIds.length === 0) {
             setQueueSongs([]);
@@ -68,7 +63,6 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
         }
     }, [supabaseClient]);
     
-    // Define loadRandomQueue with useCallback BEFORE the useEffect
     const loadRandomQueue = useCallback(async () => {
         setIsLoadingQueue(true);
         try {
@@ -95,7 +89,6 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
         }
     }, [supabaseClient, song?.id]);
 
-    // NOW the useEffect with all dependencies included
     useEffect(() => {
         const loadQueue = async () => {
             if (player.ids.length > 0 && player.activeId) {
@@ -104,14 +97,12 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
                     const currentIndex = player.ids.findIndex((id) => id === player.activeId);
                     const nextSongIds = player.ids.slice(currentIndex + 1);
                     
-                    // If we're in shuffle mode, create a shuffled queue from all available songs
                     if (shuffleMode && player.ids.length > 1) {
                         const shuffledIds = [...player.ids]
                             .filter(id => id !== player.activeId)
                             .sort(() => Math.random() - 0.5);
                         await fetchQueueSongs(shuffledIds);
                     } else {
-                        // Normal queue: next songs in order
                         await fetchQueueSongs(nextSongIds);
                     }
                 } catch (error) {
@@ -120,7 +111,6 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
                     setIsLoadingQueue(false);
                 }
             } else {
-                // If no specific queue, load random songs from library
                 loadRandomQueue();
             }
         };
@@ -130,11 +120,9 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
 
     const onPlayNext = () => {
         if (player.ids.length === 0) {
-            // If no specific playlist, play next from random queue
             if (queueSongs.length > 0) {
                 const nextSong = queueSongs[0];
                 player.setId(nextSong.id);
-                // Update queue to remove the played song
                 setQueueSongs(prev => prev.slice(1));
             }
             return;
@@ -144,7 +132,6 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
         const nextSong = player.ids[currentIndex + 1];
 
         if (!nextSong) {
-            // If at end of playlist, loop to start or stop
             if (player.ids.length > 0) {
                 player.setId(player.ids[0]);
             }
@@ -161,7 +148,6 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
         const previousSong = player.ids[currentIndex - 1];
 
         if (!previousSong) {
-            // If at start of playlist, go to last song
             player.setId(player.ids[player.ids.length - 1]);
             return;
         }
@@ -174,16 +160,27 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
     const [play, {pause, sound}] = useSound(
         sanitizedUrl,
         {
-            volume: volume,
-            onplay: () => setIsPlaying(true),
+            volume: player.volume,
+            onplay: () => player.setIsPlaying(true), // Use global state
             onend: () => {
-                setIsPlaying(false);
+                player.setIsPlaying(false); // Use global state
                 onPlayNext();
             },
-            onPause: () => setIsPlaying(false),
+            onpause: () => player.setIsPlaying(false), // Use global state
             format: ['mp3']
         }
     );
+
+    // Sync audio playback with global isPlaying state
+    useEffect(() => {
+        if (sound) {
+            if (player.isPlaying) {
+                play();
+            } else {
+                pause();
+            }
+        }
+    }, [player.isPlaying, sound, play, pause]);
 
     useEffect(() => {
         sound?.play();
@@ -194,18 +191,16 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
     }, [sound]);
 
     const handlePlay = () => {
-        if (!isPlaying) {
-            play();
-            setIsPlaying(true);
-        } else {
-            pause();
-            setIsPlaying(false);
-        }
+        // Toggle global isPlaying state
+        player.setIsPlaying(!player.isPlaying);
     };
 
     const toggleMute = () => {
-        if (volume === 0) setVolume(1);
-        else setVolume(0);
+        if (player.volume === 0) {
+            player.setVolume(1);
+        } else {
+            player.setVolume(0);
+        }
     };
 
     const toggleQueue = () => {
@@ -217,11 +212,9 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
     };
 
     const handleQueueItemClick = (songId: string) => {
-        // If this song is part of the current playlist, set it as active
         if (player.ids.includes(songId)) {
             player.setId(songId);
         } else {
-            // If it's from random queue, update player state
             player.setId(songId);
             player.setIds([songId, ...queueSongs.map(s => s.id).filter(id => id !== songId)]);
         }
@@ -259,73 +252,92 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
                 </div>
             </div>
             
-            <div className="hidden h-full md:flex justify-center items-center w-full max-w-[722px] gap-x-6">
-                <AiFillStepBackward 
-                    size={20} 
-                    className="text-neutral-400 cursor-pointer hover:text-white transition" 
-                    onClick={onPlayPrevious}
-                />
-                <div 
-                    onClick={handlePlay} 
-                    className="flex items-center justify-center h-10 w-10 rounded-full bg-white p-1 cursor-pointer hover:scale-105 transition"
-                >
-                    <Icon size={20} className="text-black"/>
-                </div>
-                <AiFillStepForward 
-                    size={20} 
-                    className="text-neutral-400 cursor-pointer hover:text-white transition" 
-                    onClick={onPlayNext}
-                />
-            </div>
+            <div className="hidden h-full md:flex justify-center items-center w-full max-w-[722px] gap-x-8">
+  <button 
+    onClick={onPlayPrevious}
+    className="p-2 rounded-full bg-neutral-800 hover:bg-neutral-700 transition-all duration-200 group"
+  >
+    <AiFillStepBackward 
+      size={22} 
+      className="text-neutral-300 group-hover:text-white transition-colors" 
+    />
+  </button>
+  
+  <button 
+    onClick={handlePlay} 
+    className="flex items-center justify-center h-12 w-12 rounded-full bg-white hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
+  >
+    <Icon size={24} className="text-black"/>
+  </button>
+  
+  <button 
+    onClick={onPlayNext}
+    className="p-2 rounded-full bg-neutral-800 hover:bg-neutral-700 transition-all duration-200 group"
+  >
+    <AiFillStepForward 
+      size={22} 
+      className="text-neutral-300 group-hover:text-white transition-colors" 
+    />
+  </button>
+</div>
 
-            <div className="flex items-center justify-end gap-4">
-                {/* Shuffle Button */}
-                <button 
-                    onClick={toggleShuffle}
-                    className={`text-neutral-400 hover:text-white transition ${shuffleMode ? 'text-green-500' : ''}`}
-                    title={shuffleMode ? "Disable shuffle" : "Enable shuffle"}
-                >
-                    <FaRandom size={16} />
-                </button>
+            <div className="flex items-center justify-end gap-6 pr-4">
+  {/* Shuffle Button */}
+  <button 
+    onClick={toggleShuffle}
+    className={`p-2 rounded-lg transition-all duration-200 ${
+      shuffleMode 
+        ? 'bg-green-500/20 text-green-400' 
+        : 'bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700'
+    }`}
+    title={shuffleMode ? "Disable shuffle" : "Enable shuffle"}
+  >
+    <FaRandom size={16} />
+  </button>
 
-                {/* Queue Button */}
-                <button 
-                    onClick={toggleQueue}
-                    className={`text-neutral-400 hover:text-white transition ${showQueue ? 'text-white' : ''}`}
-                    title="Show queue"
-                >
-                    <FaList size={20} />
-                </button>
+  {/* Queue Button */}
+  <button 
+    onClick={toggleQueue}
+    className={`p-2 rounded-lg transition-all duration-200 ${
+      showQueue 
+        ? 'bg-white/10 text-white' 
+        : 'bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700'
+    }`}
+    title="Show queue"
+  >
+    <FaList size={18} />
+  </button>
 
-                {/* Volume Control */}
-                <div className="flex items-center gap-x-2 w-[120px]">
-                    <VolumeIcon 
-                        size={20} 
-                        className="text-gray-400 cursor-pointer hover:text-white transition" 
-                        onClick={toggleMute}
-                    />
-                    <Slider 
-                        value={volume} 
-                        onChange={(value) => setVolume(value)}
-                    />
-                </div>
+  {/* Volume Control */}
+  <div className="flex items-center gap-x-3 w-[140px]">
+    <button 
+      onClick={toggleMute}
+      className="p-2 rounded-lg bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700 transition-all duration-200"
+    >
+      <VolumeIcon size={20} />
+    </button>
+    <Slider 
+      value={player.volume} 
+      onChange={(value) => player.setVolume(value)}
+    />
+  </div>
 
                 {/* Queue Dropdown */}
                 {showQueue && (
-                    <div className="absolute bottom-20 right-0 bg-neutral-800 rounded-lg shadow-2xl border border-neutral-700 w-80 max-h-96 overflow-y-auto z-50">
-                        <div className="p-4 border-b border-neutral-700">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-white font-semibold">{getQueueTitle()}</h3>
-                                {shuffleMode && (
-                                    <span className="text-green-500 text-xs bg-green-500/20 px-2 py-1 rounded-full">
-                                        Shuffle
-                                    </span>
-                                )}
-                            </div>
-                            <p className="text-neutral-400 text-sm mt-1">
-                                {getQueueDescription()}
-                            </p>
-                        </div>
+  <div className="absolute bottom-24 right-4 bg-neutral-900/95 backdrop-blur-lg rounded-xl shadow-2xl border border-neutral-700 w-96 max-h-80 overflow-y-auto z-50">
+    <div className="p-4 border-b border-neutral-700 bg-gradient-to-r from-neutral-800 to-neutral-900 rounded-t-xl">
+      <div className="flex items-center justify-between">
+        <h3 className="text-white font-bold text-lg">{getQueueTitle()}</h3>
+        {shuffleMode && (
+          <span className="text-green-400 text-xs bg-green-500/20 px-3 py-1 rounded-full font-medium">
+            Shuffle Active
+          </span>
+        )}
+      </div>
+      <p className="text-neutral-400 text-sm mt-1">
+        {getQueueDescription()}
+      </p>
+    </div>
                         
                         <div className="p-2">
                             {isLoadingQueue ? (
