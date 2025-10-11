@@ -8,7 +8,9 @@ export interface ActivityFeedProps {
   onPlaylistClick: (playlistId: string) => void;
   onPlaySong: (songId: string) => void;
   playingStates: { [key: string]: boolean };
-  onTogglePlayState: (playlistId: string) => void;
+  // onTogglePlayState: (playlistId: string) => void;
+  onPlaylistPlay: (playlistId: string, firstSongId: string) => void; // Add this
+  isPlaylistPlaying: (playlistId: string) => boolean; 
 }
 
 export interface ActivityCardProps {

@@ -169,7 +169,7 @@ const HomeClient: React.FC<HomeClientProps> = ({
           onPlaySong={onPlay}
           onPlaylistPlay={handlePlaylistPlay} // New prop
           playingStates={playingStates}
-          isPlaylistPlaying={isPlaylistPlaying} // New prop
+          isPlaylistPlaying={isPlaylistPlaying}
         />
         
         <Sidebar isLoading={isLoading} />

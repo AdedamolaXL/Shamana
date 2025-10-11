@@ -1,16 +1,24 @@
 "use client";
 import { SongListProps } from "./types";
+import usePlayer from "@/hooks/usePlayer";
 
 export const SongList: React.FC<SongListProps> = ({ 
   songs, 
   playlist, 
-  onPlaySong 
+  onPlaySong,
+  isPlaylistPlaying
 }) => {
+  const player = usePlayer();
+
   return (
     <div className="flex flex-col gap-1.5 mb-4 relative z-10">
       {songs.slice(0, 3).map((song: string, index: number) => {
         const songInPlaylist = playlist?.playlist_songs?.[index]?.songs;
         const songId = songInPlaylist?.id;
+        
+        // Check if this song is currently playing
+        const isCurrentSong = player.activeId === songId;
+        const isPlaying = isCurrentSong && player.isPlaying;
         
         return (
           <div 
@@ -36,16 +44,25 @@ export const SongList: React.FC<SongListProps> = ({
             }}
           >
             <div className="relative w-5 flex items-center justify-center">
-              <span className="text-[#6a11cb] font-medium transition-all duration-300 group-hover/song:opacity-0 group-hover/song:scale-0">
-                {index + 1}
-              </span>
-              
-              <div className="absolute inset-0 flex items-center justify-center transition-all duration-300 opacity-0 scale-50 group-hover/song:opacity-100 group-hover/song:scale-100">
-                <i className="fas fa-play text-[#6a11cb] text-xs"></i>
-              </div>
+              {isCurrentSong && isPlaying ? (
+                // Show pause icon when this song is playing
+                <i className="fas fa-pause text-[#6a11cb] text-xs"></i>
+              ) : (
+                <>
+                  <span className="text-[#6a11cb] font-medium transition-all duration-300 group-hover/song:opacity-0 group-hover/song:scale-0">
+                    {index + 1}
+                  </span>
+                  
+                  <div className="absolute inset-0 flex items-center justify-center transition-all duration-300 opacity-0 scale-50 group-hover/song:opacity-100 group-hover/song:scale-100">
+                    <i className="fas fa-play text-[#6a11cb] text-xs"></i>
+                  </div>
+                </>
+              )}
             </div>
             
-            <span className="transition-colors duration-300 truncate flex-1">{song}</span>
+            <span className={`transition-colors duration-300 truncate flex-1 ${isCurrentSong ? 'text-[#6a11cb] font-medium' : ''}`}>
+              {song}
+            </span>
           </div>
         );
       })}

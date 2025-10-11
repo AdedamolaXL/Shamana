@@ -4,6 +4,7 @@ import { ActivityCardProps } from "./types";
 import { AnimatedGradientBackground } from "@/app/(site)/components/shared/AnimationGradientBackground";
 import { WaveformThumbnail } from "./WaveFormThumbnail";
 import { SongList } from "./SongList";
+import usePlayer from "@/hooks/usePlayer";
 
 export const ActivityCard: React.FC<ActivityCardProps> = ({
   activity,
@@ -16,6 +17,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
   const gradientIndex = index % 10;
   const playlistId = activity.playlist?.id;
   const isPlaying = playlistId ? isPlaylistPlaying(playlistId) : false;
+  const player = usePlayer();
 
   // Function to handle play button click
   const handlePlayButtonClick = () => {
@@ -27,7 +29,19 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
     }
   };
 
-  return (
+  // Function to handle individual song clicks with pause support
+  const handleSongClick = (songId: string) => {
+    // Check if this song is currently playing
+    if (player.activeId === songId && player.isPlaying) {
+      // Pause the song
+      player.setIsPlaying(false);
+    } else {
+      // Play the song
+      onPlaySong(songId);
+    }
+  };
+
+   return (
     <div 
       className="bg-[#1a1a1a] rounded-xl p-5 mb-5 
         transition-all duration-300 hover:bg-[#222] hover:shadow-xl hover:shadow-purple-500/10
@@ -89,7 +103,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
         <SongList
           songs={activity.songs}
           playlist={activity.playlist}
-          onPlaySong={onPlaySong}
+          onPlaySong={handleSongClick}
         />
       )}
     </div>

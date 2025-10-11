@@ -1,7 +1,6 @@
 "use client";
 import { ActivityFeedProps } from "./types";
 import { ActivityCard } from "./ActivityCard";
-import { ActivitySkeleton } from "./ActivitySkeleton";
 
 export const ActivityFeed: React.FC<ActivityFeedProps> = ({
   activities,
@@ -15,11 +14,11 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <>
-        {[1, 2, 3].map((item) => (
-          <ActivitySkeleton key={item} />
-        ))}
-      </>
+      <div className="flex-[3] bg-[#111] rounded-xl p-5">
+        <div className="text-center py-8 text-neutral-400">
+          
+        </div>
+      </div>
     );
   }
 

@@ -1,7 +1,8 @@
+// app/(site)/components/HeroCarousel/HeroCarousel.tsx
+
 "use client";
 import { useRef, useState, useCallback, useEffect } from "react";
 import { Slide } from "./types";
-import { HeroCarouselSkeleton } from "./HeroCarouselSkeleton";
 
 interface HeroCarouselProps {
   slides: Slide[];
@@ -49,7 +50,15 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({
   };
 
   if (isLoading) {
-    return <HeroCarouselSkeleton />;
+    return (
+      <section className="relative my-10 rounded-xl overflow-hidden h-[400px] bg-gray-800">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-white text-xl"></div>
+          </div>
+        </div>
+      </section>
+    );
   }
 
   return (

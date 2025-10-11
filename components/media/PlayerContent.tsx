@@ -18,9 +18,18 @@ interface PlayerContentProps {
 }
 
 const sanitizeUrl = (url: string) => {
+  if (!url) return '';
+  
+  // Don't modify already valid HTTP(S) URLs
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  
+  // Handle IPFS URLs
   if (url.startsWith('ipfs://')) {
     return url.replace('ipfs://', process.env.NEXT_PUBLIC_PINATA_GATEWAY_URL + '/ipfs/');
   }
+  
   return url;
 }
 
@@ -157,17 +166,28 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
 
     const sanitizedUrl = sanitizeUrl(songUrl);
     
+    // Enhanced useSound configuration for better audio quality
     const [play, {pause, sound}] = useSound(
         sanitizedUrl,
         {
             volume: player.volume,
-            onplay: () => player.setIsPlaying(true), // Use global state
+            html5: true, // Use HTML5 Audio for better quality
+            format: ['mp3', 'wav', 'ogg'], // Support multiple formats
+            onplay: () => player.setIsPlaying(true),
             onend: () => {
-                player.setIsPlaying(false); // Use global state
+                player.setIsPlaying(false);
                 onPlayNext();
             },
-            onpause: () => player.setIsPlaying(false), // Use global state
-            format: ['mp3']
+            onpause: () => player.setIsPlaying(false),
+            onload: () => {
+                console.log('Audio loaded successfully');
+            },
+            onloaderror: (id: any, error: any) => {
+                console.error('Audio load error:', error, 'URL:', sanitizedUrl);
+            },
+            onplayerror: (id: any, error: any) => {
+                console.error('Audio play error:', error);
+            }
         }
     );
 
@@ -175,23 +195,22 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
     useEffect(() => {
         if (sound) {
             if (player.isPlaying) {
-                play();
+                // Only play if not already playing
+                sound.play();
             } else {
-                pause();
+                sound.pause();
             }
         }
-    }, [player.isPlaying, sound, play, pause]);
+    }, [player.isPlaying, sound]);
 
+    // Initialize sound but don't auto-play
     useEffect(() => {
-        sound?.play();
-
         return () => {
             sound?.unload();
         };
     }, [sound]);
 
     const handlePlay = () => {
-        // Toggle global isPlaying state
         player.setIsPlaying(!player.isPlaying);
     };
 
@@ -253,91 +272,87 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
             </div>
             
             <div className="hidden h-full md:flex justify-center items-center w-full max-w-[722px] gap-x-8">
-  <button 
-    onClick={onPlayPrevious}
-    className="p-2 rounded-full bg-neutral-800 hover:bg-neutral-700 transition-all duration-200 group"
-  >
-    <AiFillStepBackward 
-      size={22} 
-      className="text-neutral-300 group-hover:text-white transition-colors" 
-    />
-  </button>
-  
-  <button 
-    onClick={handlePlay} 
-    className="flex items-center justify-center h-12 w-12 rounded-full bg-white hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
-  >
-    <Icon size={24} className="text-black"/>
-  </button>
-  
-  <button 
-    onClick={onPlayNext}
-    className="p-2 rounded-full bg-neutral-800 hover:bg-neutral-700 transition-all duration-200 group"
-  >
-    <AiFillStepForward 
-      size={22} 
-      className="text-neutral-300 group-hover:text-white transition-colors" 
-    />
-  </button>
-</div>
+                <button 
+                    onClick={onPlayPrevious}
+                    className="p-2 rounded-full bg-neutral-800 hover:bg-neutral-700 transition-all duration-200 group"
+                >
+                    <AiFillStepBackward 
+                        size={22} 
+                        className="text-neutral-300 group-hover:text-white transition-colors" 
+                    />
+                </button>
+                
+                <button 
+                    onClick={handlePlay} 
+                    className="flex items-center justify-center h-12 w-12 rounded-full bg-white hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                    <Icon size={24} className="text-black"/>
+                </button>
+                
+                <button 
+                    onClick={onPlayNext}
+                    className="p-2 rounded-full bg-neutral-800 hover:bg-neutral-700 transition-all duration-200 group"
+                >
+                    <AiFillStepForward 
+                        size={22} 
+                        className="text-neutral-300 group-hover:text-white transition-colors" 
+                    />
+                </button>
+            </div>
 
             <div className="flex items-center justify-end gap-6 pr-4">
-  {/* Shuffle Button */}
-  <button 
-    onClick={toggleShuffle}
-    className={`p-2 rounded-lg transition-all duration-200 ${
-      shuffleMode 
-        ? 'bg-green-500/20 text-green-400' 
-        : 'bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700'
-    }`}
-    title={shuffleMode ? "Disable shuffle" : "Enable shuffle"}
-  >
-    <FaRandom size={16} />
-  </button>
+                <button 
+                    onClick={toggleShuffle}
+                    className={`p-2 rounded-lg transition-all duration-200 ${
+                        shuffleMode 
+                            ? 'bg-green-500/20 text-green-400' 
+                            : 'bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700'
+                    }`}
+                    title={shuffleMode ? "Disable shuffle" : "Enable shuffle"}
+                >
+                    <FaRandom size={16} />
+                </button>
 
-  {/* Queue Button */}
-  <button 
-    onClick={toggleQueue}
-    className={`p-2 rounded-lg transition-all duration-200 ${
-      showQueue 
-        ? 'bg-white/10 text-white' 
-        : 'bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700'
-    }`}
-    title="Show queue"
-  >
-    <FaList size={18} />
-  </button>
+                <button 
+                    onClick={toggleQueue}
+                    className={`p-2 rounded-lg transition-all duration-200 ${
+                        showQueue 
+                            ? 'bg-white/10 text-white' 
+                            : 'bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700'
+                    }`}
+                    title="Show queue"
+                >
+                    <FaList size={18} />
+                </button>
 
-  {/* Volume Control */}
-  <div className="flex items-center gap-x-3 w-[140px]">
-    <button 
-      onClick={toggleMute}
-      className="p-2 rounded-lg bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700 transition-all duration-200"
-    >
-      <VolumeIcon size={20} />
-    </button>
-    <Slider 
-      value={player.volume} 
-      onChange={(value) => player.setVolume(value)}
-    />
-  </div>
+                <div className="flex items-center gap-x-3 w-[140px]">
+                    <button 
+                        onClick={toggleMute}
+                        className="p-2 rounded-lg bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700 transition-all duration-200"
+                    >
+                        <VolumeIcon size={20} />
+                    </button>
+                    <Slider 
+                        value={player.volume} 
+                        onChange={(value) => player.setVolume(value)}
+                    />
+                </div>
 
-                {/* Queue Dropdown */}
                 {showQueue && (
-  <div className="absolute bottom-24 right-4 bg-neutral-900/95 backdrop-blur-lg rounded-xl shadow-2xl border border-neutral-700 w-96 max-h-80 overflow-y-auto z-50">
-    <div className="p-4 border-b border-neutral-700 bg-gradient-to-r from-neutral-800 to-neutral-900 rounded-t-xl">
-      <div className="flex items-center justify-between">
-        <h3 className="text-white font-bold text-lg">{getQueueTitle()}</h3>
-        {shuffleMode && (
-          <span className="text-green-400 text-xs bg-green-500/20 px-3 py-1 rounded-full font-medium">
-            Shuffle Active
-          </span>
-        )}
-      </div>
-      <p className="text-neutral-400 text-sm mt-1">
-        {getQueueDescription()}
-      </p>
-    </div>
+                    <div className="absolute bottom-24 right-4 bg-neutral-900/95 backdrop-blur-lg rounded-xl shadow-2xl border border-neutral-700 w-96 max-h-80 overflow-y-auto z-50">
+                        <div className="p-4 border-b border-neutral-700 bg-gradient-to-r from-neutral-800 to-neutral-900 rounded-t-xl">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-white font-bold text-lg">{getQueueTitle()}</h3>
+                                {shuffleMode && (
+                                    <span className="text-green-400 text-xs bg-green-500/20 px-3 py-1 rounded-full font-medium">
+                                        Shuffle Active
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-neutral-400 text-sm mt-1">
+                                {getQueueDescription()}
+                            </p>
+                        </div>
                         
                         <div className="p-2">
                             {isLoadingQueue ? (
@@ -384,7 +399,6 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
                             )}
                         </div>
 
-                        {/* Current Playing Indicator */}
                         <div className="p-3 border-t border-neutral-700 bg-neutral-900/50">
                             <div className="flex items-center gap-3">
                                 <div className="w-8 flex items-center justify-center">
