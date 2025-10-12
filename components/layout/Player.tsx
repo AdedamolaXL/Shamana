@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import useGetSongsById from '@/hooks/useGetSongById';
 import usePlayer from '@/hooks/usePlayer';
 import useLoadSongUrl from '@/hooks/useLoadSongUrl';
-import { PlayerContent } from '../media';
+import { PlayerContent } from '@/components/media';
 import { Song } from '@/types';
 import { useSupabaseClient } from '@supabase/auth-helpers-react';
 

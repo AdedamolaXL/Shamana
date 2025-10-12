@@ -53,10 +53,10 @@ const Header: React.FC<HeaderProps> = ({ children, className }) => {
             path: '/', 
             key: 'home'
         },
-        { 
-            name: 'Tribes', 
-            path: '/tribes', 
-            key: 'tribes'
+         { 
+            name: 'Artists', 
+            path: '/artists', 
+            key: 'artists'  
         },
         { 
             name: 'Playlists', 

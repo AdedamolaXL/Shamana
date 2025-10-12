@@ -1,5 +1,3 @@
-// app/(site)/components/HeroCarousel/HeroCarousel.tsx
-
 "use client";
 import { useRef, useState, useCallback, useEffect } from "react";
 import { Slide } from "./types";

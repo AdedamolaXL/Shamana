@@ -51,6 +51,55 @@ const UploadModal = () => {
         } 
     });
 
+    // Move handleArtistCreation inside the component to access router and other hooks
+    const handleArtistCreation = async (artistName: string, imagePath?: string) => {
+      try {
+        const response = await fetch('/api/artists/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: artistName,
+            image_path: imagePath || null
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.warn('Artist creation warning:', errorData.error);
+        }
+
+        return await response.json();
+      } catch (error) {
+        console.error('Error creating artist:', error);
+      }
+    };
+
+    const handleArtistSongRelationship = async (artistName: string, songId: string) => {
+  try {
+    const response = await fetch('/api/artists/link-song', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        artistName,
+        songId
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.warn('Artist-song linking warning:', errorData.error);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error linking artist to song:', error);
+  }
+};
+
     // modal change handler
     const onChange = (open: boolean) => {
         if (!open) {
@@ -150,24 +199,51 @@ const UploadModal = () => {
             }
 
             
-            const {
-                error: supabaseError
-            } = await supabaseClient
-            .from('songs')
-            .insert({
-                id: uuidv4(),
-                user_id: user.id,
-                title: values.title,
-                author: values.author,
-                image_path: imageData.path,
-                song_path: songData.path,
-                duration
-            });
+            // const {
+            //     error: supabaseError
+            // } = await supabaseClient
+            // .from('songs')
+            // .insert({
+            //     id: uuidv4(),
+            //     user_id: user.id,
+            //     title: values.title,
+            //     author: values.author,
+            //     image_path: imageData.path,
+            //     song_path: songData.path,
+            //     duration
+            // });
+
+            const { data: newSong, error: supabaseError } = await supabaseClient
+      .from('songs')
+      .insert({
+        id: uuidv4(),
+        user_id: user.id,
+        title: values.title,
+        author: values.author,
+        image_path: imageData.path,
+        song_path: songData.path,
+        duration
+      })
+      .select()
+      .single();
 
             if (supabaseError) {
                 return toast.error(supabaseError.message);
             }
 
+             // Handle artist creation and linking
+    if (values.author && newSong) {
+      try {
+        // First create/update the artist
+        await handleArtistCreation(values.author, imageData.path);
+        
+        // Then link the song to the artist
+        await handleArtistSongRelationship(values.author, newSong.id);
+        console.log('Artist creation and song linking completed');
+      } catch (artistError) {
+        console.warn('Artist creation/linking failed, but song was uploaded:', artistError);
+      }
+    }
             router.refresh();
             setIsLoading(false);
             toast.success("Song uploaded successfully!");
@@ -176,12 +252,9 @@ const UploadModal = () => {
 
         } catch (error: any) {
             toast.error(error.message || "Something went wrong");
-        } finally {
             setIsLoading(false);
         }
     }   
-
-    
 
     return (
         <Modal title="Add a Song" description="Upload an mp3 file" isOpen={uploadModal.isOpen} onChange={onChange} >

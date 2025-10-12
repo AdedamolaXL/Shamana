@@ -6,7 +6,6 @@ import { useEffect, useState, useCallback } from "react";
 import useSound from "use-sound"
 import { Song } from "@/types";
 import MediaItem from "./MediaItem";
-import LikeButton from "./LikeButton";
 import { Slider } from "../ui"
 import usePlayer from "@/hooks/usePlayer";
 import { FaList, FaRandom } from "react-icons/fa";
@@ -267,7 +266,6 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
             <div className="flex w-full justify-start">
                 <div className="flex items-center gap-x-4">
                     <MediaItem data={song}/>
-                    <LikeButton songId={song.id} />
                 </div>
             </div>
             

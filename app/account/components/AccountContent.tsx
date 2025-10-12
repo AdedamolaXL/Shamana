@@ -6,7 +6,6 @@ import { toast } from "react-hot-toast"
 import { useRouter } from "next/navigation"
 import Input from "@/components/ui/Input"
 import Button from "@/components/ui/Button"
-import Modal from "@/components/ui/Modal"
 import { useUser } from "@/hooks/useUser"
 import { FaCoins, FaSync, FaWallet, FaMusic, FaChartLine, FaPlayCircle, FaGem, FaPlus } from "react-icons/fa"
 

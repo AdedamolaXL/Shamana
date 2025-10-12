@@ -9,6 +9,7 @@
     "lint": "next lint",
     "type-check": "tsc --pretty --noEmit",
     "create-token": "node scripts/create-playlist-token.js",
+    "hedera-utils": "node scripts/hedera-utils.js",
     "setup-identity": "node scripts/setup-identity-network.js"
   },
   "dependencies": {

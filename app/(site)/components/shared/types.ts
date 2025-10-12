@@ -21,5 +21,5 @@ export interface HomeClientProps {
 
 export interface ErrorState {
   message: string;
-  type?: 'tribes' | 'playlists' | 'songs';
+  type?: 'playlists' | 'songs';
 }

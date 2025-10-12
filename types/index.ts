@@ -22,6 +22,7 @@ export interface Song {
     image_path?: string
     created_at?: string;
     duration?: number;
+    artists?: Artist[];
 }
 
 export interface Playlist {
@@ -71,4 +72,15 @@ export interface Contributor {
   is_curator: boolean;
   songs_added: number;
   songs?: { id: string; title: string }[];
+}
+
+export interface Artist {
+  id: string;
+  name: string;
+  image_path: string | null;
+  bio: string | null;
+  created_at: string;
+  updated_at: string;
+  songs?: Song[];
+  total_songs?: number;
 }
