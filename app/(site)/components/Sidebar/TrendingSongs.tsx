@@ -23,7 +23,7 @@ export const TrendingSongsSection: React.FC<TrendingSongsSectionProps> = ({ isLo
           .from('songs')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(8);
+          .limit(16);
 
         if (error) {
           console.error('Error fetching trending songs:', error);
