@@ -9,7 +9,7 @@ const useOnPlay = (songs: Song[]) => {
         if (songs && songs.length > 0) {
             player.setIds(songs.map((song) => song.id));
         }
-        player.setIsPlaying(true); 
+        player.setIsPlaying(true);
     }
 
     return onPlay;

@@ -25,6 +25,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "scripts/hedera-utils.js", "scripts/create-playlist-token.js", "scripts/setup-identity-network.js"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "scripts/hedera-utils.js", "scripts/create-playlist-token.js", "scripts/setup-identity-network.js", "app/playlists/[id]/components/SongList"],
   "exclude": ["node_modules"]
 }

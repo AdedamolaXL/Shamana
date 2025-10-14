@@ -19,12 +19,10 @@ interface PlayerContentProps {
 const sanitizeUrl = (url: string) => {
   if (!url) return '';
   
-  // Don't modify already valid HTTP(S) URLs
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
   }
   
-  // Handle IPFS URLs
   if (url.startsWith('ipfs://')) {
     return url.replace('ipfs://', process.env.NEXT_PUBLIC_PINATA_GATEWAY_URL + '/ipfs/');
   }
@@ -43,6 +41,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
     const Icon = player.isPlaying ? BsPauseFill : BsPlayFill;
     const VolumeIcon = player.volume === 0 ? HiSpeakerXMark : HiSpeakerWave;
 
+    // Fetch songs for the queue based on context
     const fetchQueueSongs = useCallback(async (songIds: string[]) => {
         if (songIds.length === 0) {
             setQueueSongs([]);
@@ -53,14 +52,14 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
             const { data: songs, error } = await supabaseClient
                 .from('songs')
                 .select('*')
-                .in('id', songIds)
-                .order('created_at', { ascending: false });
+                .in('id', songIds);
 
             if (error) {
                 console.error('Error fetching queue songs:', error);
                 return;
             }
 
+            // Order songs according to the songIds array
             const orderedSongs = songIds
                 .map(id => songs?.find(song => song.id === id))
                 .filter(Boolean) as Song[];
@@ -97,8 +96,10 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
         }
     }, [supabaseClient, song?.id]);
 
+    // Load queue based on player context
     useEffect(() => {
         const loadQueue = async () => {
+            // If we have a playlist context and IDs, show those songs
             if (player.ids.length > 0 && player.activeId) {
                 setIsLoadingQueue(true);
                 try {
@@ -119,6 +120,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
                     setIsLoadingQueue(false);
                 }
             } else {
+                // No playlist context, load random songs
                 loadRandomQueue();
             }
         };
@@ -165,13 +167,12 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
 
     const sanitizedUrl = sanitizeUrl(songUrl);
     
-    // Enhanced useSound configuration for better audio quality
     const [play, {pause, sound}] = useSound(
         sanitizedUrl,
         {
             volume: player.volume,
-            html5: true, // Use HTML5 Audio for better quality
-            format: ['mp3', 'wav', 'ogg'], // Support multiple formats
+            html5: true,
+            format: ['mp3', 'wav', 'ogg'],
             onplay: () => player.setIsPlaying(true),
             onend: () => {
                 player.setIsPlaying(false);
@@ -190,11 +191,9 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
         }
     );
 
-    // Sync audio playback with global isPlaying state
     useEffect(() => {
         if (sound) {
             if (player.isPlaying) {
-                // Only play if not already playing
                 sound.play();
             } else {
                 sound.pause();
@@ -202,7 +201,6 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
         }
     }, [player.isPlaying, sound]);
 
-    // Initialize sound but don't auto-play
     useEffect(() => {
         return () => {
             sound?.unload();
@@ -230,12 +228,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
     };
 
     const handleQueueItemClick = (songId: string) => {
-        if (player.ids.includes(songId)) {
-            player.setId(songId);
-        } else {
-            player.setId(songId);
-            player.setIds([songId, ...queueSongs.map(s => s.id).filter(id => id !== songId)]);
-        }
+        player.setId(songId);
         setShowQueue(false);
     };
 
@@ -248,6 +241,9 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
     };
 
     const getQueueTitle = () => {
+        if (player.playlistContext) {
+            return shuffleMode ? "Playlist Queue (Shuffle)" : "Playlist Queue";
+        }
         if (player.ids.length > 0) {
             return shuffleMode ? "Up Next (Shuffle)" : "Up Next";
         }
@@ -255,6 +251,9 @@ const PlayerContent: React.FC<PlayerContentProps> = ({song, songUrl}) => {
     };
 
     const getQueueDescription = () => {
+        if (player.playlistContext) {
+            return `${queueSongs.length} song${queueSongs.length !== 1 ? 's' : ''} in playlist`;
+        }
         if (player.ids.length > 0) {
             return `${queueSongs.length} song${queueSongs.length !== 1 ? 's' : ''} in queue`;
         }

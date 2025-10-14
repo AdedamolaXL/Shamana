@@ -2,12 +2,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { PlaylistWithSongs, Song } from "@/types";
-import { FaMusic, FaBookmark, FaHeart, FaPlay, FaClock, FaCrown, FaPause, FaGem } from "react-icons/fa";
 import toast from "react-hot-toast";
 import { useUser } from "@/hooks/useUser";
 import useOnPlay from "@/hooks/useOnPlay";
 import usePlayer from "@/hooks/usePlayer";
 import Image from "next/image";
+import { PlaylistHero } from "./PlaylistHero";
+import { PlaylistActions } from "./PlaylistActions";
+import { PlaylistSongList } from "./PlaylistSongList";
+import { PlaylistSidebar } from "./PlaylistSidebar";
+import { PlaylistComments } from "./PlaylistComments";
 
 interface PlaylistPageClientProps {
   playlist: PlaylistWithSongs;
@@ -39,13 +43,11 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
   });
   const [isVoting, setIsVoting] = useState(false);
   const [userVote, setUserVote] = useState<'upvote' | 'downvote' | null>(null);
-  const [contributors, setContributors] = useState<Contributor[]>([]); // New state for contributors
+  const [contributors, setContributors] = useState<Contributor[]>([]);
   const [isLoadingContributors, setIsLoadingContributors] = useState(true);
   const [isPlayingPlaylist, setIsPlayingPlaylist] = useState(false);
   const [isControllingPlaylist, setIsControllingPlaylist] = useState(false);
-  const [commentLikes, setCommentLikes] = useState<Record<number, boolean>>({});
   const [isPulsing, setIsPulsing] = useState(true); 
-
 
   const router = useRouter();
   const { user } = useUser();
@@ -193,7 +195,6 @@ useEffect(() => {
  
 
 
-  // Fetch contributors when component mounts
   useEffect(() => {
     const fetchContributors = async () => {
       if (!currentPlaylist.id) return;
@@ -260,8 +261,7 @@ useEffect(() => {
   };
   
 
-    // Handle playlist play/pause
-  
+  // Handle playlist play/pause - UPDATED
   const handlePlayPausePlaylist = () => {
     const playlistSongs = getPlaylistSongs();
     
@@ -284,6 +284,7 @@ useEffect(() => {
         toast("Resuming playlist");
       } else {
         player.setIds(playlistSongIds);
+        player.setPlaylistContext(currentPlaylist.id); // SET PLAYLIST CONTEXT
         const firstSongId = playlistSongIds[0];
         player.setId(firstSongId);
         player.setIsPlaying(true);
@@ -295,7 +296,7 @@ useEffect(() => {
   };
   
   
-   // Handle when user clicks on individual songs
+  // Handle when user clicks on individual songs - UPDATED
   const handleSongClick = (songId: string) => {
     const playlistSongs = getPlaylistSongs();
     const playlistSongIds = playlistSongs.map(song => song.id);
@@ -304,19 +305,12 @@ useEffect(() => {
     if (playlistSongIds.includes(songId)) {
       setIsControllingPlaylist(true);
       player.setIds(playlistSongIds);
+      player.setPlaylistContext(currentPlaylist.id); // SET PLAYLIST CONTEXT
     }
     
     // Play the specific song
     onPlay(songId);
   };
-
-
- 
-
-
-
-  
-
 
 
     const handleVote = async (voteType: 'upvote' | 'downvote') => {
@@ -349,10 +343,8 @@ useEffect(() => {
       throw new Error(data.error || 'Failed to submit vote');
     }
 
-    // Update local state with new weights (+10 for upvote, -10 for downvote)
     if (voteType === 'upvote') {
       if (userVote === 'downvote') {
-        // Changing from downvote to upvote: +20 points (remove -10, add +10)
         setReputationData(prev => ({
           ...prev,
           score: prev.score + 20,
@@ -361,7 +353,6 @@ useEffect(() => {
           totalVotes: prev.totalVotes
         }));
       } else if (userVote === null) {
-        // New upvote: +10 points
         setReputationData(prev => ({
           ...prev,
           score: prev.score + 10,
@@ -371,7 +362,6 @@ useEffect(() => {
       }
     } else if (voteType === 'downvote') {
       if (userVote === 'upvote') {
-        // Changing from upvote to downvote: -20 points (remove +10, add -10)
         setReputationData(prev => ({
           ...prev,
           score: prev.score - 20,
@@ -380,7 +370,6 @@ useEffect(() => {
           totalVotes: prev.totalVotes
         }));
       } else if (userVote === null) {
-        // New downvote: -10 points
         setReputationData(prev => ({
           ...prev,
           score: prev.score - 10,
@@ -390,9 +379,7 @@ useEffect(() => {
       }
     }
 
-    // Handle unvoting (clicking the same vote type again)
     if (userVote === voteType) {
-      // User is removing their vote
       const scoreChange = voteType === 'upvote' ? -10 : 10;
       setReputationData(prev => ({
         ...prev,
@@ -410,7 +397,6 @@ useEffect(() => {
 
     toast.success(data.message || `Successfully ${voteType}d playlist`);
     
-    // Refresh reputation data to ensure consistency
     setTimeout(() => {
       fetchReputationData();
     }, 500);
@@ -436,12 +422,10 @@ useEffect(() => {
         return '0:00';
     }
     
-    // Sum up all song durations in seconds
     const totalSeconds = currentPlaylist.playlist_songs.reduce((total, playlistSong) => {
         return total + (playlistSong.songs.duration || 0);
     }, 0);
     
-    // Convert to hours and minutes
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     
@@ -452,15 +436,11 @@ useEffect(() => {
     }
 };
 
-  // Check if current user is the creator
   const isCreator = user && currentPlaylist.user_id === user.id;
 
-  // Songs not in the playlist
   const availableSongs = allSongs.filter(
     (song) => !currentPlaylist.playlist_songs?.some((ps) => ps.songs.id === song.id)
   );
-
-  const handleLike = () => setIsLiked(!isLiked);
 
   const handleAddToPlaylist = async (songId: string) => {
     if (!user) {
@@ -539,7 +519,6 @@ useEffect(() => {
       throw new Error(data.error || "Failed to collect playlist");
     }
 
-    // Refresh collection status and count with a small delay to ensure DB is updated
     setTimeout(async () => {
       await checkIfCollected();
       await fetchCollectionCount();
@@ -554,148 +533,35 @@ useEffect(() => {
   }
 };
 
-
-  const handleSaveChanges = async () => {
-    if (!user) {
-      toast.error("Please sign in to save changes");
-      return;
-    }
-
-    try {
-      if (addedSongs.length > 0) {
-        try {
-          const rewardResponse = await fetch("/api/token/mint", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              amount: addedSongs.length,
-              playlistId: currentPlaylist.id,
-            }),
-          });
-
-          if (rewardResponse.ok) {
-            toast.success(`Earned ${addedSongs.length} tokens for your contributions!`);
-          } else {
-            toast.success("Playlist updated successfully!");
-          }
-        } catch (err) {
-          console.warn("Token minting error:", err);
-          toast.success("Playlist updated successfully!");
-        }
-      } else {
-        toast.success("Playlist updated successfully!");
-      }
-
-      setAddedSongs([]);
-      router.refresh();
-    } catch (error) {
-      console.error("Error saving changes:", error);
-      toast.error("Failed to save changes");
-    }
-  };
-
   useEffect(() => {
     const playlistSongs = getPlaylistSongs();
     const playlistSongIds = playlistSongs.map(song => song.id);
     
-    // Check if the current active song is in this playlist
     const isPlaylistActive = player.activeId && playlistSongIds.includes(player.activeId);
-    
-    // Check if the player is currently playing this playlist's songs
     const isPlayingThisPlaylist = isPlaylistActive && player.isPlaying;
     
     setIsPlayingPlaylist(Boolean(isPlayingThisPlaylist));
     
-    // If we're controlling the playlist and the active song changes to outside the playlist, stop controlling
     if (isControllingPlaylist && player.activeId && !playlistSongIds.includes(player.activeId)) {
       setIsControllingPlaylist(false);
     }
   }, [player.activeId, player.isPlaying, currentPlaylist.playlist_songs, isControllingPlaylist, getPlaylistSongs]);
 
-  const toggleCommentLike = (id: number) => setCommentLikes(prev => ({...prev, [id]: !prev[id]}));
+  
 
   return (
-    <div className="max-w-[1200px] mx-auto px-[15px]">
-      {/* Hero Section with Actual Playlist Data */}
-      <section className={`relative h-[300px] rounded-xl overflow-hidden my-10 flex items-end p-10 
-        bg-gradient-to-br from-[#6a11cb] to-[#2575fc] lg:h-[250px] lg:p-8 md:h-[200px] md:my-5 md:p-5
-        ${isPulsing ? 'animate-pulse-slow' : ''}`}>
-        
-        {/* CTA Button - Top Right */}
-        {!isCreator && !isCollected && (
-          <div className="absolute top-6 right-6 z-20">
-            <button 
-              onClick={handleCollectClick}
-              className="group relative bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-black font-bold py-3 px-6 rounded-full shadow-2xl transform transition-all duration-300 hover:scale-105 hover:shadow-amber-500/25 flex items-center gap-2 border-2 border-amber-300"
-            >
-              {/* Animated sparkle effect */}
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full animate-ping"></div>
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full"></div>
-              
-              <FaGem className="text-amber-700 group-hover:text-amber-800 transition-colors" />
-              <span className="whitespace-nowrap">Collect as NFT</span>
-              
-              {/* Hover tooltip */}
-              <div className="absolute bottom-full mb-2 hidden group-hover:block bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap">
-                Own this playlist forever! 🎵
-              </div>
-            </button>
-          </div>
-        )}
-
-        {/* Collection Badge - If already collected */}
-        {isCollected && (
-          <div className="absolute top-6 right-6 z-20">
-            <div className="bg-gradient-to-r from-green-400 to-emerald-500 text-white font-bold py-3 px-6 rounded-full shadow-lg flex items-center gap-2 border-2 border-emerald-300">
-              <FaGem className="text-white" />
-              <span className="whitespace-nowrap">Collected ✓</span>
-            </div>
-          </div>
-        )}
-
-        {/* Curator Badge - If user is creator */}
-        {isCreator && (
-          <div className="absolute top-6 right-6 z-20">
-            <div className="bg-gradient-to-r from-purple-400 to-pink-500 text-white font-bold py-3 px-6 rounded-full shadow-lg flex items-center gap-2 border-2 border-pink-300">
-              <FaCrown className="text-white" />
-              <span className="whitespace-nowrap">Your Creation</span>
-            </div>
-          </div>
-        )}
-
-        {/* Existing banner content */}
-        <div className="relative z-10 w-full">
-          <h1 className="text-4xl font-bold mb-2 md:text-3xl">{currentPlaylist.name}</h1>
-          <p className="text-lg mb-5 opacity-90 max-w-[600px] md:text-base">
-            {currentPlaylist.description || `A curated playlist by ${getCreatorName()}`}
-          </p>
-          <div className="flex gap-5 text-sm text-gray-400">
-            <div className="flex items-center gap-1">
-              <i className="fas fa-music"></i>
-              <span>{currentPlaylist.playlist_songs?.length || 0} songs</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <i className="fas fa-clock"></i>
-              <span>{calculateDuration()}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FaGem className="text-sm" />
-              <span>{collectionCount} collectors</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <i className="fas fa-star"></i>
-              <span className={`font-bold ${reputationData.score > 0 ? 'text-green-500' : reputationData.score < 0 ? 'text-red-500' : 'text-gray-400'}`}>
-                {reputationData.score}%
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Animated overlay for pulsing effect */}
-        {isPulsing && (
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer rounded-xl"></div>
-        )}
-      </section>
+      <div className="max-w-[1200px] mx-auto px-[15px]">
+      <PlaylistHero
+        playlist={currentPlaylist}
+        isCreator={!!isCreator}
+        isCollected={isCollected}
+        isPulsing={isPulsing}
+        collectionCount={collectionCount}
+        reputationData={reputationData}
+        getCreatorName={getCreatorName}
+        onCollectClick={handleCollectClick}
+        calculateDuration={calculateDuration}
+      />
 
       <section className="flex gap-8 mb-14 flex-col lg:flex-row">
         <div className="flex-[3] flex flex-col gap-8">
@@ -715,266 +581,36 @@ useEffect(() => {
               />
             </div>
             
-            {/* Playlist Actions */}
-            <div className="flex gap-[15px] mb-[20px]">
-             <button className={`flex items-center gap-1 text-gray-400 text-sm transition-colors hover:text-white  ${
-                  isPlayingPlaylist 
-                    ? ' text-white hover:bg-green-600' 
-                    : ' text-white hover:bg-[#7a2bdb]'
-                } ${getPlaylistSongs().length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`} 
-                onClick={handlePlayPausePlaylist}
-                disabled={getPlaylistSongs().length === 0}>
-                {isPlayingPlaylist ? (
-                  <>
-                    <FaPause className="text-sm" />
-                    <span>Pause</span>
-                  </>
-                ) : (
-                  <>
-                    <FaPlay className="text-sm" />
-                    <span>Play</span>
-                  </>
-                )}
-              </button> 
+            <PlaylistActions
+              isPlayingPlaylist={isPlayingPlaylist}
+              userVote={userVote}
+              isVoting={isVoting}
+              isCollected={isCollected}
+              isSaving={isSaving}
+              reputationData={reputationData}
+              onPlayPausePlaylist={handlePlayPausePlaylist}
+              onVote={handleVote}
+              onSavePlaylist={handleSavePlaylist}
+              hasSongs={getPlaylistSongs().length > 0}
+            />
 
-               {/* Like/Upvote Button */}
-              <button 
-                className={`flex items-center gap-1 text-sm transition-colors ${
-                  userVote === 'upvote' 
-                    ? 'text-red-500' 
-                    : 'text-gray-400 hover:text-white'
-                } ${isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
-                onClick={() => handleVote('upvote')}
-                disabled={isVoting}
-              >
-                <FaHeart className={userVote === 'upvote' ? 'fill-current' : ''} />
-                <span>
-                  {isVoting ? 'Voting...' : userVote === 'upvote' ? 'Liked' : 'Like'}
-                </span>
-                {reputationData.upvotes > 0 && (
-                  <span className="ml-1">({reputationData.upvotes})</span>
-                )}
-              </button>
+            <PlaylistSongList
+              playlist={currentPlaylist}
+              onSongClick={handleSongClick}
+              formatDuration={formatDuration}
+            />
 
-              {/* Dislike/Downvote Button (optional) */}
-              <button 
-                className={`flex items-center gap-1 text-sm transition-colors ${
-                  userVote === 'downvote' 
-                    ? 'text-blue-500' 
-                    : 'text-gray-400 hover:text-white'
-                } ${isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
-                onClick={() => handleVote('downvote')}
-                disabled={isVoting}
-              >
-                <i className={`fas fa-thumbs-down ${userVote === 'downvote' ? 'text-blue-500' : ''}`}></i>
-                <span>
-                  {isVoting ? 'Voting...' : userVote === 'downvote' ? 'Disliked' : 'Dislike'}
-                </span>
-                {reputationData.downvotes > 0 && (
-                  <span className="ml-1">({reputationData.downvotes})</span>
-                )}
-              </button>
-
-
-
-              <button 
-                className={`flex items-center gap-1 text-gray-400 text-sm transition-colors hover:text-white ${
-                isCollected ? 'text-green-500' : ''
-                } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
-                onClick={handleSavePlaylist}
-                disabled={isSaving || isCollected}
-              >
-                <FaBookmark className={isCollected ? "text-green-500" : ""} />
-                <span>
-                  {isSaving ? 'Saving...' : isCollected ? 'Collected' : 'Collect Playlist'}
-                </span>
-              </button>
-              <button className="flex items-center gap-1 text-gray-400 text-sm transition-colors hover:text-white">
-                <i className="fas fa-ellipsis-h"></i>
-                <span>More</span>
-              </button>
-            </div>
-
-
-            
-
-
-            {/* Song List */}
-            <div className="flex flex-col">
-              {currentPlaylist.playlist_songs?.map((playlistSong, index) => (
-                <div key={playlistSong.songs.id} className="flex items-center gap-4 py-3 px-2 cursor-pointer border-b border-[#222] hover:bg-[#1a1a1a] transition"
-                onClick={() => handleSongClick(playlistSong.songs.id)}
-                >
-                  <span className="w-6 text-sm text-gray-400">{index + 1}</span>
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">{playlistSong.songs.title}</div>
-                    <div className="text-xs text-gray-500">{playlistSong.songs.author}</div>
-                  </div>
-                  <span className="text-xs text-gray-400"> {formatDuration(playlistSong.songs.duration)}</span>
-                  <div className="flex items-center gap-2 ml-4">
-                    <button className="text-gray-400 hover:text-white transition">
-                      <i className="far fa-heart"></i>
-                    </button>
-                    <button className="text-gray-400 hover:text-white transition">
-                      <i className="fas fa-plus"></i>
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {(!currentPlaylist.playlist_songs || currentPlaylist.playlist_songs.length === 0) && (
-                <div className="text-center py-8 text-gray-400">
-                  <FaMusic className="mx-auto mb-2 text-2xl" />
-                  <p>No songs in this playlist yet</p>
-                  <p className="text-sm">Be the first to add songs!</p>
-                </div>
-              )}
-            </div>
-
-            {/* Comments Section */}
-            <div className="comments-section mt-10">
-  {/* Header */}
-  <div className="comments-header flex items-center justify-between mb-5">
-    <h3 className="comments-title text-xl font-semibold">Comments</h3>
-    <select className="comments-filter bg-[#222] border-0 rounded px-3 py-1 text-sm text-white">
-      <option>Newest first</option>
-      <option>Most liked</option>
-    </select>
-  </div>
-
-  {/* Comments */}
-  {[
-    {id:1, name:'Sarah Chen', time:'2 hours ago', text:'This playlist is absolutely fire! The transition between tracks is seamless.', likes:24},
-    {id:2, name:'Marcus Brown', time:'5 hours ago', text:'Needs more songs. Otherwise solid playlist.', likes:12},
-    {id:3, name:'Jamal Williams', time:'1 day ago', text:'Discovered so many new artists from this playlist.', likes:42},
-    {id:4, name:'Elena Rodriguez', time:'2 days ago', text:'The sequencing is perfect! Love how each track flows into the next.', likes:31}
-  ].map(comment => (
-    <div key={comment.id} className="comment flex gap-3 mb-6">
-      {/* Avatar */}
-      <Image
-        src="https://res.cloudinary.com/dqhawdcol/image/upload/v1758202400/e9ifs1tewfgemgxfc5kc.jpg"
-        alt="User"
-        width={60}
-        height={60}
-        className="comment-avatar rounded-full object-cover shrink-0"
-      />
-      {/* Content */}
-      <div className="comment-content flex-1">
-        <div className="comment-header flex items-center gap-2 mb-1">
-          <span className="commenter-name font-semibold">{comment.name}</span>
-          <span className="comment-time text-xs text-gray-400">{comment.time}</span>
-        </div>
-        <p className="comment-text text-sm mb-2">{comment.text}</p>
-        <div className="comment-actions flex gap-4 text-sm text-gray-400">
-          <button
-            className={`comment-action flex items-center gap-1 transition-colors hover:text-white ${
-              commentLikes[comment.id] ? 'text-[#6a11cb]' : ''
-            }`}
-            onClick={() => toggleCommentLike(comment.id)}
-          >
-            <i className={`${commentLikes[comment.id] ? 'fas' : 'far'} fa-heart`} />
-            <span>{comment.likes + (commentLikes[comment.id] ? 1 : 0)}</span>
-          </button>
-          <button className="comment-action flex items-center gap-1 transition-colors hover:text-white">
-            <i className="far fa-comment" />
-            <span>Reply</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  ))}
-</div>
-
-
+            <PlaylistComments />
           </div>
         </div>
 
-        {/* Sidebar */}
         <div className="flex-[1] flex flex-col gap-[30px]">
-          <div className="bg-[#111] rounded-xl p-5">
-            <h3 className="text-[1.2rem] font-semibold mb-[15px]">Song Queue</h3>
-            <div className="mb-[25px]">
-              {availableSongs.slice(0, 16).map((song, i) => (
-                <div key={song.id} className="flex items-center gap-[10px] py-2 border-b border-[#222] last:border-none">
-                  <div className="flex-1">
-                    <div className="text-[0.9rem] font-medium">
-                      {song.title}
-                    </div>
-                    <div className="text-[0.8rem] text-[#999]">{song.author}</div>
-                  </div>
-                  <span className="text-[0.8rem] text-[#999]"> {formatDuration(song.duration)}</span>
-                  <button
-                    className="text-sm text-[#6a11cb] hover:text-white transition-colors"
-                    onClick={() => handleAddToPlaylist(song.id)}
-                    disabled={isAdding === song.id}
-                  >
-                    <i className="fas fa-plus"></i>
-                  </button>
-                </div>
-              ))}
-              {availableSongs.length === 0 && (
-                <p className="text-gray-400 text-sm text-center py-4">No songs available to add</p>
-              )}
-            </div>
-
-            {/* Contributors Section */}
-             <h3 className="text-[1.2rem] font-semibold mb-[15px]">Contributors</h3>
-              <div className="space-y-3">
-              {isLoadingContributors ? (
-                // Loading skeleton
-                Array.from({ length: 3 }).map((_, index) => (
-                  <div key={index} className="flex items-center gap-3 animate-pulse">
-                    <div className="w-8 h-8 bg-neutral-700 rounded-full"></div>
-                    <div className="flex-1">
-                      <div className="h-3 bg-neutral-700 rounded w-20 mb-1"></div>
-                      <div className="h-2 bg-neutral-700 rounded w-16"></div>
-                    </div>
-                  </div>
-                ))
-              ) : contributors.length > 0 ? (
-                contributors.map((contributor) => (
-                  <div key={contributor.id} className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium ${
-                      contributor.is_curator 
-                        ? 'bg-gradient-to-br from-yellow-500 to-amber-500' 
-                        : 'bg-gradient-to-br from-[#6a11cb] to-[#2575fc]'
-                    }`}>
-                      {contributor.username.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-white truncate">
-                          {contributor.username}
-                        </span>
-                        {contributor.is_curator && (
-                          <span className="flex items-center gap-1 bg-yellow-500/20 text-yellow-300 px-2 py-0.5 rounded-full text-xs">
-                            <FaCrown size={10} />
-                            Curator
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-neutral-400">
-                        {contributor.songs_added} song{contributor.songs_added !== 1 ? 's' : ''}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-4 text-neutral-400 text-sm">
-                  <FaMusic className="mx-auto mb-2 text-lg" />
-                  <p>No contributors yet</p>
-                </div>
-              )}
-            </div>
-
-
-            {contributors.length > 0 && (
-              <div className="mt-4 pt-3 border-t border-neutral-700">
-                <div className="text-xs text-neutral-400 text-center">
-                  {contributors.length} contributor{contributors.length !== 1 ? 's' : ''}
-                </div>
-              </div>
-            )}
-          </div>
+          <PlaylistSidebar
+            availableSongs={availableSongs}
+            onAddToPlaylist={handleAddToPlaylist}
+            isAdding={isAdding}
+            playlistId={currentPlaylist.id}
+          />
         </div>
       </section>
     </div>

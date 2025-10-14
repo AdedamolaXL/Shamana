@@ -16,8 +16,23 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 }) => {
   const gradientIndex = index % 10;
   const playlistId = activity.playlist?.id;
-  const isPlaying = playlistId ? isPlaylistPlaying(playlistId) : false;
   const player = usePlayer();
+
+  // Check if this playlist is currently playing based on player state
+  const getIsPlaylistPlaying = (): boolean => {
+    if (!playlistId || !activity.playlist?.playlist_songs) return false;
+    
+    // Get all song IDs in this playlist
+    const playlistSongIds = activity.playlist.playlist_songs.map(ps => ps.songs.id);
+    
+    // Check if the current active song is from this playlist AND player is playing
+    const isPlaylistActive = player.activeId && playlistSongIds.includes(player.activeId);
+    const isPlaying = isPlaylistActive && player.isPlaying;
+    
+    return Boolean(isPlaying);
+  };
+
+  const isPlaying = getIsPlaylistPlaying();
 
   // Function to handle play button click
   const handlePlayButtonClick = () => {
@@ -36,7 +51,12 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
       // Pause the song
       player.setIsPlaying(false);
     } else {
-      // Play the song
+      // Play the song with playlist context
+      if (playlistId) {
+        const playlistSongIds = activity.playlist?.playlist_songs?.map(ps => ps.songs.id) || [];
+        player.setIds(playlistSongIds);
+        player.setPlaylistContext(playlistId);
+      }
       onPlaySong(songId);
     }
   };

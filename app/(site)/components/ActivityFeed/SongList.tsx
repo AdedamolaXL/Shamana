@@ -6,9 +6,20 @@ export const SongList: React.FC<SongListProps> = ({
   songs, 
   playlist, 
   onPlaySong,
-  isPlaylistPlaying
 }) => {
   const player = usePlayer();
+
+  const handleSongClick = (songId: string, index: number) => {
+    // When clicking a song in the playlist, set the playlist context
+    if (playlist?.id) {
+      const playlistSongIds = playlist.playlist_songs?.map((ps: { songs: { id: any; }; }) => ps.songs.id) || [];
+      player.setIds(playlistSongIds);
+      player.setPlaylistContext(playlist.id);
+    }
+    
+    // Call the parent's onPlaySong handler
+    onPlaySong(songId);
+  };
 
   return (
     <div className="flex flex-col gap-1.5 mb-4 relative z-10">
@@ -29,7 +40,7 @@ export const SongList: React.FC<SongListProps> = ({
             onClick={(e) => {
               e.stopPropagation();
               if (songId) {
-                onPlaySong(songId);
+                handleSongClick(songId, index);
               }
             }}
             tabIndex={0}
@@ -38,7 +49,7 @@ export const SongList: React.FC<SongListProps> = ({
                 e.preventDefault();
                 e.stopPropagation();
                 if (songId) {
-                  onPlaySong(songId);
+                  handleSongClick(songId, index);
                 }
               }
             }}
