@@ -8,7 +8,7 @@ export const getPlaylistById = async (id: string): Promise<PlaylistWithSongs> =>
     cookies: cookies
   });
 
-  // Get playlist WITH user information and songs
+  // Get playlist WITH user information and songs - ordered by most recent first
   const { data: playlistData, error: playlistError } = await supabase
     .from('playlists')
     .select(`
@@ -17,10 +17,15 @@ export const getPlaylistById = async (id: string): Promise<PlaylistWithSongs> =>
       playlist_songs (
         id,
         position,
+        added_at,
         songs (*)
       )
     `)
     .eq('id', id)
+    .order('added_at', { 
+      foreignTable: 'playlist_songs', 
+      ascending: false // Most recent first
+    })
     .single();
 
   if (playlistError || !playlistData) {
@@ -28,6 +33,5 @@ export const getPlaylistById = async (id: string): Promise<PlaylistWithSongs> =>
     notFound();
   }
 
-  // Return with the correct PlaylistWithSongs structure
   return playlistData as PlaylistWithSongs;
 };

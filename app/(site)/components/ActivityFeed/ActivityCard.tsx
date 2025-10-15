@@ -23,7 +23,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
     if (!playlistId || !activity.playlist?.playlist_songs) return false;
     
     // Get all song IDs in this playlist
-    const playlistSongIds = activity.playlist.playlist_songs.map(ps => ps.songs.id);
+    const playlistSongIds = activity.playlist.playlist_songs.map((ps: { songs: any[]; }) => ps.songs.id);
     
     // Check if the current active song is from this playlist AND player is playing
     const isPlaylistActive = player.activeId && playlistSongIds.includes(player.activeId);
@@ -53,7 +53,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
     } else {
       // Play the song with playlist context
       if (playlistId) {
-        const playlistSongIds = activity.playlist?.playlist_songs?.map(ps => ps.songs.id) || [];
+        const playlistSongIds = activity.playlist?.playlist_songs?.map((ps: { songs: any[]; }) => ps.songs.id) || [];
         player.setIds(playlistSongIds);
         player.setPlaylistContext(playlistId);
       }
@@ -61,7 +61,24 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
     }
   };
 
-   return (
+  // Generate the appropriate description based on activity type
+  const getActivityDescription = () => {
+    if (activity.type === "song_addition") {
+      // Check if the contributor is the playlist owner
+      const isOwnPlaylist = activity.addedSongAuthor === activity.user;
+      
+      if (isOwnPlaylist) {
+        return `${activity.user} is updating their ${activity.playlistName} playlist`;
+      } else {
+        return `${activity.addedSongAuthor} is contributing to ${activity.user}'s ${activity.playlistName} playlist`;
+      }
+    } else {
+      // Default playlist creation
+      return `${activity.user} is curating a new playlist called ${activity.playlistName}`;
+    }
+  };
+
+  return (
     <div 
       className="bg-[#1a1a1a] rounded-xl p-5 mb-5 
         transition-all duration-300 hover:bg-[#222] hover:shadow-xl hover:shadow-purple-500/10
@@ -94,7 +111,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
         </div>
         <div className="flex-1">
           <div className="font-semibold transition-colors duration-300 group-hover:text-white">
-            {activity.user}
+            {getActivityDescription()}
           </div>
           <div className="text-sm text-gray-400 mt-1 group-hover:text-gray-300 transition-colors duration-300">
             {activity.timestamp}
@@ -114,9 +131,9 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
         <div className="text-lg font-semibold mb-1 transition-colors duration-300 group-hover:text-white">
           {activity.playlistName}
         </div>
-        <div className="text-sm text-gray-300 group-hover:text-gray-200 transition-colors duration-300">
+        {/* <div className="text-sm text-gray-300 group-hover:text-gray-200 transition-colors duration-300">
           {activity.details}
-        </div>
+        </div> */}
       </div>
 
       {activity.songs && (
@@ -124,6 +141,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
           songs={activity.songs}
           playlist={activity.playlist}
           onPlaySong={handleSongClick}
+          highlightSong={activity.addedSongId}
         />
       )}
     </div>

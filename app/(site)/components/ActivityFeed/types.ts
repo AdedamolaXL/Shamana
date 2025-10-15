@@ -26,6 +26,7 @@ export interface SongListProps {
   songs: string[];
   playlist?: any;
   onPlaySong: (songId: string) => void;
+  highlightSong?: string; // New optional prop
 }
 
 export interface WaveformThumbnailProps {
