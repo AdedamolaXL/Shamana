@@ -1,4 +1,3 @@
-// app/(site)/components/HomeClient.tsx
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -9,7 +8,7 @@ import { ActivityFeed } from "./ActivityFeed/ActivityFeed";
 import { Sidebar } from "./Sidebar/Sidebar";
 import { HomeClientProps, ActivityItem, ErrorState } from "./shared/types";
 import { usePlaylistPlayback } from "@/hooks/usePlaylistPlayback";
-import { useActivityFeed } from "@/hooks/useActivityFeed"; // Import the new hook
+import { useActivityFeed } from "@/hooks/useActivityFeed"; 
 
 const HomeClient: React.FC<HomeClientProps> = ({ 
   session, 

@@ -84,12 +84,20 @@ export const useActivityFeed = () => {
       });
 
       // Transform song additions
-      const songAdditionActivities: ActivityItem[] = (recentAdditions || []).map((addition) => {
+      const songAdditionActivities: ActivityItem[] = (recentAdditions || []).map((addition: any) => {
         const playlist = addition.playlists;
-        const contributor = addition.user?.username || addition.user?.email?.split('@')[0] || "Anonymous";
-        const playlistOwner = Array.isArray(playlist?.user) 
-          ? playlist.user[0]?.username || playlist.user[0]?.email?.split('@')[0] || "Anonymous"
-          : playlist?.user?.username || playlist?.user?.email?.split('@')[0] || "Anonymous";
+
+        const resolveUserDisplay = (user: any) => {
+          if (!user) return "Anonymous";
+          if (Array.isArray(user)) {
+            const u = user[0];
+            return u?.username ?? u?.email?.split('@')[0] ?? "Anonymous";
+          }
+          return user?.username ?? user?.email?.split('@')[0] ?? "Anonymous";
+        };
+
+        const contributor = resolveUserDisplay(addition.user);
+        const playlistOwner = resolveUserDisplay(playlist?.user);
 
         // Sort songs by added_at timestamp (most recent first)
         const sortedPlaylistSongs = playlist?.playlist_songs
