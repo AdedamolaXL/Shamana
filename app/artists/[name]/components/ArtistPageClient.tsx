@@ -1,10 +1,11 @@
 "use client";
 import { Artist, Song } from "@/types";
-import { FaMusic, FaPlay, FaUser } from "react-icons/fa";
+import { FaMusic, FaPlay, FaUser, FaHeadphones, FaCoins, FaChartLine } from "react-icons/fa";
 import useOnPlay from "@/hooks/useOnPlay";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import useLoadArtistImage from "@/hooks/useLoadArtistImage";
+import { useEffect, useState } from "react";
 
 interface ArtistPageClientProps {
   artist: Artist;
@@ -14,6 +15,28 @@ const ArtistPageClient: React.FC<ArtistPageClientProps> = ({ artist }) => {
   const router = useRouter();
   const onPlay = useOnPlay(artist.songs || []);
   const imageUrl = useLoadArtistImage(artist);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Refresh artist stats
+  const refreshStats = async () => {
+    if (!artist.id) return;
+    
+    try {
+      setIsRefreshing(true);
+      const response = await fetch(`/api/artists/${artist.id}/refresh-stats`, {
+        method: 'POST'
+      });
+      
+      if (response.ok) {
+        // Reload the page to get updated data
+        router.refresh();
+      }
+    } catch (error) {
+      console.error('Error refreshing stats:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const handlePlay = (songId: string) => {
     onPlay(songId);
@@ -21,6 +44,19 @@ const ArtistPageClient: React.FC<ArtistPageClientProps> = ({ artist }) => {
 
   const handleSongClick = (songId: string) => {
     router.push(`/song/${songId}`);
+  };
+
+  // Format number with commas
+  const formatNumber = (num: number): string => {
+    return num?.toLocaleString() || '0';
+  };
+
+  // Format earnings as MANA tokens
+  const formatEarnings = (earnings: number): string => {
+    return earnings?.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }) || '0.00';
   };
 
   return (
@@ -41,17 +77,62 @@ const ArtistPageClient: React.FC<ArtistPageClientProps> = ({ artist }) => {
         </div>
         
         <div className="flex-1">
-          <p className="text-sm font-medium text-neutral-400 mb-2">Artist</p>
-          <h1 className="text-6xl font-bold mb-4">{artist.name}</h1>
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <p className="text-sm font-medium text-neutral-400 mb-2">Artist</p>
+              <h1 className="text-6xl font-bold mb-4">{artist.name}</h1>
+            </div>
+            <button
+              onClick={refreshStats}
+              disabled={isRefreshing}
+              className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-white px-4 py-2 rounded-lg transition-all duration-200 disabled:opacity-50"
+            >
+              <FaChartLine className={isRefreshing ? "animate-spin" : ""} />
+              {isRefreshing ? "Updating..." : "Refresh Stats"}
+            </button>
+          </div>
+          
           <div className="flex items-center gap-6 text-neutral-400">
+            {/* Total Songs */}
             <div className="flex items-center gap-2">
               <FaMusic className="text-neutral-400" />
               <span>{artist.total_songs || 0} songs</span>
             </div>
+            
+            {/* Total Plays - Now from database */}
+            <div className="flex items-center gap-2">
+              <FaHeadphones className="text-blue-400" />
+              <span className="text-white font-medium">
+                {formatNumber(artist.total_plays || 0)} plays
+              </span>
+            </div>
+            
+            {/* Total Earnings - Now from database */}
+            <div className="flex items-center gap-2">
+              <FaCoins className="text-yellow-400" />
+              <span className="text-yellow-400 font-medium">
+                {formatEarnings(artist.total_earnings || 0)} MANA
+              </span>
+            </div>
           </div>
+
+          {/* Earnings Note */}
+          <div className="mt-4 text-sm text-neutral-500">
+            Earnings from playlist contributions (50% share)
+          </div>
+
+          {/* Artist Bio */}
+          {artist.bio && (
+            <div className="mt-6 max-w-2xl">
+              <p className="text-neutral-300 leading-relaxed">{artist.bio}</p>
+            </div>
+          )}
         </div>
       </section>
 
+      
+
+      {/* Rest of the component remains the same */}
       {/* Songs Section */}
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">

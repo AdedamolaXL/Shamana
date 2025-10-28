@@ -83,4 +83,8 @@ export interface Artist {
   updated_at: string;
   songs?: Song[];
   total_songs?: number;
+  total_plays?: number;
+  total_earnings?: number;
+  monthly_plays?: number;
+  last_updated_stats?: string;
 }

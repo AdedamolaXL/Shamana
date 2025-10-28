@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     }
 
     // Calculate current playlist value
-    const playlistValue = await EarningsCalculator.calculatePlaylistValue(playlistId);
+     const playlistValue = await EarningsCalculator.calculatePlaylistValue(playlistId, supabase);
 
     // Calculate share coefficient
     const shareCoefficient = EarningsCalculator.calculateShareCoefficient(
@@ -74,6 +74,11 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
+    const listenerAmount = claimableAmount * 0.5;
+    const artistAmount = claimableAmount * 0.5;
+
+    
+
     // Mint tokens to user
     const tokenId = process.env.HEDERA_FT_TOKEN_ID;
     if (!tokenId) {
@@ -86,7 +91,7 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         userId: session.user.id,
         tokenId: tokenId,
-        amount: Math.floor(claimableAmount), // Round to whole tokens
+        amount: Math.floor(listenerAmount), // Listener gets 50%
         playlistId: playlistId,
         claimType: 'earnings'
       }),
@@ -98,6 +103,8 @@ export async function POST(req: Request) {
     }
 
     const mintResult = await mintResponse.json();
+
+    await EarningsCalculator.distributeArtistEarnings(playlistId, artistAmount, supabase);
 
     // Update earnings record
     const { error: updateError } = await supabase
@@ -119,12 +126,14 @@ export async function POST(req: Request) {
     }
 
     // Record the claim
-    const { error: claimError } = await supabase
+     const { error: claimError } = await supabase
       .from('earnings_claims')
       .insert({
         user_id: session.user.id,
         playlist_id: playlistId,
         claim_amount: claimableAmount,
+        listener_amount: listenerAmount,
+        artist_amount: artistAmount,
         playlist_value_at_claim: playlistValue.value,
         songs_contributed_at_claim: earnings?.songs_contributed || 0,
         total_songs_at_claim: playlistValue.songsCount,
@@ -133,6 +142,7 @@ export async function POST(req: Request) {
         claimed_at: new Date().toISOString()
       });
 
+
     if (claimError) {
       console.error("Failed to record claim:", claimError);
     }
@@ -140,6 +150,8 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       claimableAmount,
+      listenerAmount,
+      artistAmount,
       currentEntitlement,
       lastClaimedValue: earnings?.last_claimed_value || 0,
       shareCoefficient,

@@ -28,10 +28,14 @@ export async function GET(req: Request) {
     }
 
     // Calculate current entitlements and claimable amounts
-    const earningsWithDetails = await Promise.all(
+      const earningsWithDetails = await Promise.all(
       earnings.map(async (earning) => {
         try {
-          const playlistValue = await EarningsCalculator.calculatePlaylistValue(earning.playlist_id);
+          // PASS supabase client here
+          const playlistValue = await EarningsCalculator.calculatePlaylistValue(
+            earning.playlist_id, 
+            supabase
+          );
           const shareCoefficient = EarningsCalculator.calculateShareCoefficient(
             earning.songs_contributed,
             playlistValue.songsCount
@@ -80,8 +84,7 @@ export async function GET(req: Request) {
       })
     );
 
-    return NextResponse.json({ earnings: earningsWithDetails });
-
+     return NextResponse.json({ earnings: earningsWithDetails });
   } catch (error: any) {
     console.error("Error fetching playlist earnings:", error);
     return NextResponse.json(
