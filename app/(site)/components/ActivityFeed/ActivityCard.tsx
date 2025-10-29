@@ -19,14 +19,13 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
   const playlistId = activity.playlist?.id;
   const player = usePlayer();
 
-  // Checks if this playlist is currently playing based on player state
-  const getIsPlaylistPlaying = (): boolean => {
+ const getIsPlaylistPlaying = (): boolean => {
     if (!playlistId || !activity.playlist?.playlist_songs) return false;
     
     // Get all song IDs in this playlist
-    const playlistSongIds = activity.playlist.playlist_songs.map((ps: { songs: any[]; }) => ps.songs.id);
+    const playlistSongIds = activity.playlist.playlist_songs.map((ps: { songs: { id: string } }) => ps.songs.id);
     
-    // Checks if the current active song is from this playlist AND player is playing
+    // Check if the current active song is from this playlist AND player is playing
     const isPlaylistActive = player.activeId && playlistSongIds.includes(player.activeId);
     const isPlaying = isPlaylistActive && player.isPlaying;
     
@@ -35,7 +34,8 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 
   const isPlaying = getIsPlaylistPlaying();
 
-  // Function to handle play button click
+
+   // Function to handle play button click
   const handlePlayButtonClick = () => {
     if (playlistId) {
       const firstSong = activity.playlist?.playlist_songs?.[0]?.songs;
@@ -54,7 +54,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
     } else {
       // Play the song with playlist context
       if (playlistId) {
-        const playlistSongIds = activity.playlist?.playlist_songs?.map((ps: { songs: any[]; }) => ps.songs.id) || [];
+        const playlistSongIds = activity.playlist?.playlist_songs?.map((ps: { songs: { id: string } }) => ps.songs.id) || [];
         player.setIds(playlistSongIds);
         player.setPlaylistContext(playlistId);
       }
@@ -62,20 +62,20 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
     }
   };
 
-  // Generates the appropriate description based on activity type
+    // Generate the appropriate description based on activity type
   const getActivityDescription = () => {
     if (activity.type === "song_addition") {
-      // Checks if the contributor is the playlist owner
+      // Check if the contributor is the playlist owner
       const isOwnPlaylist = activity.addedSongAuthor === activity.user;
       
       if (isOwnPlaylist) {
-        return `${activity.user} updated their ${activity.playlistName} playlist`;
+        return `${activity.user} is updating their ${activity.playlistName} playlist`;
       } else {
-        return `${activity.addedSongAuthor} contributed to ${activity.user}'s playlist`;
+        return `${activity.addedSongAuthor} is contributing to ${activity.user}'s ${activity.playlistName} playlist`;
       }
     } else {
       // Default playlist creation
-      return `${activity.user} just created a new playlist`;
+      return `${activity.user} is curating a new playlist called ${activity.playlistName}`;
     }
   };
 
