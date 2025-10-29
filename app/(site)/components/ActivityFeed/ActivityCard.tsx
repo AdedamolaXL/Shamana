@@ -1,4 +1,5 @@
 "use client";
+
 import Image from "next/image";
 import { ActivityCardProps } from "./types";
 import { AnimatedGradientBackground } from "@/app/(site)/components/shared/AnimationGradientBackground";
@@ -18,14 +19,14 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
   const playlistId = activity.playlist?.id;
   const player = usePlayer();
 
-  // Check if this playlist is currently playing based on player state
+  // Checks if this playlist is currently playing based on player state
   const getIsPlaylistPlaying = (): boolean => {
     if (!playlistId || !activity.playlist?.playlist_songs) return false;
     
     // Get all song IDs in this playlist
     const playlistSongIds = activity.playlist.playlist_songs.map((ps: { songs: any[]; }) => ps.songs.id);
     
-    // Check if the current active song is from this playlist AND player is playing
+    // Checks if the current active song is from this playlist AND player is playing
     const isPlaylistActive = player.activeId && playlistSongIds.includes(player.activeId);
     const isPlaying = isPlaylistActive && player.isPlaying;
     
@@ -61,20 +62,20 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
     }
   };
 
-  // Generate the appropriate description based on activity type
+  // Generates the appropriate description based on activity type
   const getActivityDescription = () => {
     if (activity.type === "song_addition") {
-      // Check if the contributor is the playlist owner
+      // Checks if the contributor is the playlist owner
       const isOwnPlaylist = activity.addedSongAuthor === activity.user;
       
       if (isOwnPlaylist) {
-        return `${activity.user} is updating their ${activity.playlistName} playlist`;
+        return `${activity.user} updated their ${activity.playlistName} playlist`;
       } else {
-        return `${activity.addedSongAuthor} is contributing to ${activity.user}'s ${activity.playlistName} playlist`;
+        return `${activity.addedSongAuthor} contributed to ${activity.user}'s playlist`;
       }
     } else {
       // Default playlist creation
-      return `${activity.user} is curating a new playlist called ${activity.playlistName}`;
+      return `${activity.user} just created a new playlist`;
     }
   };
 
@@ -131,9 +132,6 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
         <div className="text-lg font-semibold mb-1 transition-colors duration-300 group-hover:text-white">
           {activity.playlistName}
         </div>
-        {/* <div className="text-sm text-gray-300 group-hover:text-gray-200 transition-colors duration-300">
-          {activity.details}
-        </div> */}
       </div>
 
       {activity.songs && (

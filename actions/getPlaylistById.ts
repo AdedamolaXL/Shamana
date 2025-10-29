@@ -8,7 +8,7 @@ export const getPlaylistById = async (id: string): Promise<PlaylistWithSongs> =>
     cookies: cookies
   });
 
-  // Get playlist WITH user information and songs - ordered by most recent first
+  // Get playlist with user information and songs - ordered by most recent first
   const { data: playlistData, error: playlistError } = await supabase
     .from('playlists')
     .select(`

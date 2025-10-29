@@ -1,5 +1,4 @@
 import {
-  Client,
   TokenMintTransaction,
   TransferTransaction,
   AccountId,
@@ -81,7 +80,7 @@ export async function mintNft(
     const tokenIdObj = TokenId.fromString(tokenId);
     const operatorIdObj = AccountId.fromString(operatorId.toString());
 
-    // --- MINT NFT ---
+    // Mint NFT
     const mintTx = new TokenMintTransaction()
       .setTokenId(tokenIdObj)
       .setMetadata(metadataArray)
@@ -98,7 +97,7 @@ export async function mintNft(
     if (mintReceipt.serials.length > 0) {
       const serialNumber = mintReceipt.serials[0].low;
 
-      // --- LOOK UP recipient Hedera account from DB ---
+      // Look up recipient Hedera account from db
       const supabase = createServerComponentClient({ cookies });
       const { data: user, error } = await supabase
         .from("users")
@@ -113,7 +112,7 @@ export async function mintNft(
 
       const recipientIdObj = AccountId.fromString(user.hedera_account_id);
 
-      // --- TRANSFER ---
+      // Transfer NFT to recipient
       const transferTx = new TransferTransaction()
         .addNftTransfer(tokenIdObj, serialNumber, operatorIdObj, recipientIdObj)
         .freezeWith(client);

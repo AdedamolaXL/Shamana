@@ -1,23 +1,22 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { CreatePlaylistModal } from "@/components/playlist";
 import useOnPlay from "@/hooks/useOnPlay";
 import { HeroCarousel } from "./HeroCarousel/HeroCarousel";
 import { ActivityFeed } from "./ActivityFeed/ActivityFeed";
 import { Sidebar } from "./Sidebar/Sidebar";
-import { HomeClientProps, ActivityItem, ErrorState } from "./shared/types";
+import { HomeClientProps, ErrorState } from "./shared/types";
 import { usePlaylistPlayback } from "@/hooks/usePlaylistPlayback";
 import { useActivityFeed } from "@/hooks/useActivityFeed"; 
 
 const HomeClient: React.FC<HomeClientProps> = ({ 
   session, 
-  initialPlaylists, 
   initialSongs 
 }) => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [playlistInput, setPlaylistInput] = useState("");
-  const [playlists, setPlaylists] = useState(initialPlaylists);
   const [songs, setSongs] = useState(initialSongs);
   const [error, setError] = useState<ErrorState | null>(null);
 

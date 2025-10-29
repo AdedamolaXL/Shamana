@@ -9,7 +9,7 @@ export interface ActivityItem {
   details: string;
   playlistId?: string;
   timestamp: string;
-  playlist?: any; // PlaylistWithSongs or similar
+  playlist?: any; 
   songs?: string[];
   addedSong?: string;
   addedSongAuthor?: string;

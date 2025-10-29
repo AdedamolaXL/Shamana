@@ -59,7 +59,7 @@ export const useActivityFeed = () => {
           ? [...playlist.playlist_songs].sort((a: any, b: any) => {
               const dateA = new Date(a.added_at || 0).getTime();
               const dateB = new Date(b.added_at || 0).getTime();
-              return dateB - dateA; // Most recent first
+              return dateB - dateA; 
             })
           : [];
 
@@ -77,7 +77,7 @@ export const useActivityFeed = () => {
           timestamp: formatTimestamp(playlist.created_at),
           playlist: {
             ...playlist,
-            playlist_songs: sortedPlaylistSongs // Use sorted playlist songs
+            playlist_songs: sortedPlaylistSongs 
           },
           songs: songs
         };
@@ -122,7 +122,7 @@ export const useActivityFeed = () => {
           timestamp: formatTimestamp(addition.added_at),
           playlist: {
             ...playlist,
-            playlist_songs: sortedPlaylistSongs // Use sorted playlist songs
+            playlist_songs: sortedPlaylistSongs 
           },
           songs: songs,
           addedSong: addition.songs?.title,

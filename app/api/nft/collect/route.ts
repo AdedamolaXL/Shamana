@@ -65,7 +65,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Verify user has a Hedera account (should exist from signup)
+    // Verify user has a Hedera account 
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('hedera_account_id')
@@ -115,7 +115,7 @@ export async function POST(req: Request) {
     const metadataCid = await uploadToIPFS(metadata);
     const metadataUri = `ipfs://${metadataCid}`;
 
-    // Create MINIMAL metadata for Hedera (under 100 bytes) - JUST THE IPFS URI
+    // Create MINIMAL metadata for Hedera
     const minimalMetadata = JSON.stringify({
       uri: metadataUri,
       type: "playlist_collector"

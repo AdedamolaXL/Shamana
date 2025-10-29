@@ -1,4 +1,5 @@
 "use client";
+
 import { WaveformAnimation } from "@/app/(site)/components/shared/WaveformAnimation";
 import { AnimatedGradientBackground } from "@/app/(site)/components/shared/AnimationGradientBackground";
 import { WaveformThumbnailProps } from "./types";

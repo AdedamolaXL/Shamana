@@ -51,7 +51,6 @@ const UploadModal = () => {
         } 
     });
 
-    // Move handleArtistCreation inside the component to access router and other hooks
     const handleArtistCreation = async (artistName: string, imagePath?: string) => {
       try {
         const response = await fetch('/api/artists/create', {
@@ -76,9 +75,9 @@ const UploadModal = () => {
       }
     };
 
-    const handleArtistSongRelationship = async (artistName: string, songId: string) => {
-  try {
-    const response = await fetch('/api/artists/link-song', {
+  const handleArtistSongRelationship = async (artistName: string, songId: string) => {
+    try {
+      const response = await fetch('/api/artists/link-song', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -198,52 +197,35 @@ const UploadModal = () => {
                 return toast.error("Failed to upload image: " + imageError.message);
             }
 
-            
-            // const {
-            //     error: supabaseError
-            // } = await supabaseClient
-            // .from('songs')
-            // .insert({
-            //     id: uuidv4(),
-            //     user_id: user.id,
-            //     title: values.title,
-            //     author: values.author,
-            //     image_path: imageData.path,
-            //     song_path: songData.path,
-            //     duration
-            // });
-
             const { data: newSong, error: supabaseError } = await supabaseClient
-      .from('songs')
-      .insert({
-        id: uuidv4(),
-        user_id: user.id,
-        title: values.title,
-        author: values.author,
-        image_path: imageData.path,
-        song_path: songData.path,
-        duration
-      })
-      .select()
-      .single();
+              .from('songs')
+              .insert({
+                id: uuidv4(),
+                user_id: user.id,
+                title: values.title,
+                author: values.author,
+                image_path: imageData.path,
+                song_path: songData.path,
+                duration
+            })
+            .select()
+            .single();
 
             if (supabaseError) {
                 return toast.error(supabaseError.message);
             }
 
-             // Handle artist creation and linking
-    if (values.author && newSong) {
-      try {
-        // First create/update the artist
-        await handleArtistCreation(values.author, imageData.path);
-        
-        // Then link the song to the artist
-        await handleArtistSongRelationship(values.author, newSong.id);
-        console.log('Artist creation and song linking completed');
-      } catch (artistError) {
-        console.warn('Artist creation/linking failed, but song was uploaded:', artistError);
-      }
-    }
+            // Handle artist creation and linking
+            if (values.author && newSong) {
+              try {
+                await handleArtistCreation(values.author, imageData.path);
+                await handleArtistSongRelationship(values.author, newSong.id);
+                console.log('Artist creation and song linking completed');
+              } catch (artistError) {
+              console.warn('Artist creation/linking failed, but song was uploaded:', artistError);
+              }
+            }
+    
             router.refresh();
             setIsLoading(false);
             toast.success("Song uploaded successfully!");
@@ -263,13 +245,13 @@ const UploadModal = () => {
                 <Input id="author" disabled={isLoading} {...register("author", { required: true })} placeholder="Song Author"/>
                 <div>
                     <div className="pb-1">
-                        Select a song file
+                        Selects a song file
                     </div>
                     <Input id="song" type="file" accept=".mp3" disabled={isLoading} {...register("song", { required: true })} placeholder="Song File"/>
                 </div>
                 <div>
                     <div className="pb-1">
-                        Select an image
+                        Selects an image
                     </div>
                     <Input id="image" type="file" accept="image/*" disabled={isLoading} {...register("image", { required: true })} placeholder="Song Image"/>
                 </div>

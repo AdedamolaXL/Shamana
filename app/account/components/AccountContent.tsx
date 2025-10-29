@@ -1,4 +1,5 @@
 "use client"
+
 import { useState, useEffect, useCallback } from "react"
 import { useSupabaseClient } from "@supabase/auth-helpers-react"
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form"
@@ -7,7 +8,7 @@ import { useRouter } from "next/navigation"
 import Input from "@/components/ui/Input"
 import Button from "@/components/ui/Button"
 import { useUser } from "@/hooks/useUser"
-import { FaCoins, FaSync, FaWallet, FaMusic, FaChartLine, FaPlayCircle, FaGem, FaPlus } from "react-icons/fa"
+import { FaCoins, FaSync, FaWallet, FaMusic, FaChartLine, FaGem, FaPlus } from "react-icons/fa"
 
 interface PlaylistEarning {
   last_updated: string | number | Date
@@ -65,7 +66,7 @@ const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
   }, [user]);
 
 
-  // Fetch playlist earnings - FIXED: This was defined but never called
+  // Fetch playlist earnings 
   const fetchPlaylistEarnings = useCallback(async () => {
     if (!user) return;
     

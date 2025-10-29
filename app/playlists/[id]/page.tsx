@@ -10,7 +10,7 @@ interface PlaylistPageProps {
 
 const PlaylistPage = async ({ params }: PlaylistPageProps) => {
   const playlist = await getPlaylistById(params.id);
-  const allSongs = await getSongs(); // Fetch all songs for the library
+  const allSongs = await getSongs(); 
 
   return <PlaylistPageClient playlist={playlist} allSongs={allSongs} />;
 };

@@ -7,14 +7,14 @@ interface PlayerStore {
     volume: number;
     duration: number;
     currentTime: number;
-    playlistContext?: string; // Add playlist context
+    playlistContext?: string; 
     setId: (id: string) => void;
     setIds: (ids: string[]) => void;
     setIsPlaying: (playing: boolean) => void;
     setVolume: (volume: number) => void;
     setDuration: (duration: number) => void;
     setCurrentTime: (currentTime: number) => void;
-    setPlaylistContext: (playlistId?: string) => void; // Add setter
+    setPlaylistContext: (playlistId?: string) => void; 
     reset: () => void;
 }
 

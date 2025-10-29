@@ -51,7 +51,7 @@ export const MyUserContextProvider = (props: Props) => {
                     
                     if (error) {
                         console.error('Error fetching user details:', error);
-                        // Try one more time with a different approach
+                        
                         try {
                             const { data: retryData, error: retryError } = await supabase
                                 .from('users')

@@ -8,13 +8,12 @@ import toast from "react-hot-toast";
 import { Modal } from "@/components/ui";
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
-import { AuthModalView } from "@/hooks/useAuthModal";
 
 const AuthModal = () => {
     const supabaseClient = useSupabaseClient();
     const router = useRouter();
     const { session } = useSessionContext();
-    const { onClose, isOpen, view, setView } = useAuthModal();
+    const { onClose, isOpen, view } = useAuthModal();
     const [isInitializing, setIsInitializing] = useState(false);
     const [initializedUsers, setInitializedUsers] = useState<Set<string>>(new Set());
 
@@ -133,17 +132,8 @@ const AuthModal = () => {
             setInitializedUsers(new Set());
         };
     }, []);
-
-    // handle switching between sign in and sign up views
-    const handleAuthViewChange = (view: string) => {
-        if (view === "sign_in") {
-            setView("sign_up");
-        
-        } else if (view === "sign_up") {
-            setView("sign_up");
-        }
-    };
-
+   
+    
     return (
         <Modal 
             title={view === "sign_in" ? "Welcome back to Shamana" : "Welcome to Shamana" }

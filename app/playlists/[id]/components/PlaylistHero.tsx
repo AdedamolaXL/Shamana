@@ -1,5 +1,5 @@
 "use client";
-import Image from "next/image";
+
 import { PlaylistWithSongs } from "@/types";
 import { FaGem, FaCrown, FaMusic, FaClock } from "react-icons/fa";
 

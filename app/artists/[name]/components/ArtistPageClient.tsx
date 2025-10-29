@@ -1,11 +1,12 @@
 "use client";
+
 import { Artist, Song } from "@/types";
 import { FaMusic, FaPlay, FaUser, FaHeadphones, FaCoins, FaChartLine } from "react-icons/fa";
 import useOnPlay from "@/hooks/useOnPlay";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import useLoadArtistImage from "@/hooks/useLoadArtistImage";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface ArtistPageClientProps {
   artist: Artist;

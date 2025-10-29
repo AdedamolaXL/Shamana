@@ -1,9 +1,7 @@
-// app/library/components/LibraryContent.tsx
 "use client";
+
 import { Song, Playlist, Artist } from "@/types";
 import { useState } from "react";
-import MediaItem from "@/components/media/MediaItem";
-import PlaylistItem from "@/app/playlists/components/PlaylistItem";
 import { FaMusic, FaList, FaUser } from "react-icons/fa";
 import useOnPlay from "@/hooks/useOnPlay";
 import { useRouter } from "next/navigation";

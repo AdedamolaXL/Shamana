@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react"; // Add useEffect
+import { useState, useEffect } from "react"; 
 import { useRouter } from "next/navigation";
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
@@ -39,7 +39,7 @@ const CreatePlaylistModal: React.FC<CreatePlaylistModalProps> = ({
     }
   });
 
-  // Add useEffect to set the default name when it changes
+  // Set the default name when it changes
   useEffect(() => {
     if (defaultName) {
       setValue("name", defaultName);
@@ -77,7 +77,7 @@ const CreatePlaylistModal: React.FC<CreatePlaylistModalProps> = ({
       onChange(false);
       
       if (onPlaylistCreated && data.id) {
-       onPlaylistCreated(data.id); // This should trigger the redirect
+       onPlaylistCreated(data.id);
       }
 
       

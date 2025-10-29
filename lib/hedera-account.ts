@@ -35,7 +35,7 @@ export async function activateHederaAccount(userId: string, amount: number = 1) 
     throw new Error("User not found or missing Hedera keys");
   }
 
-  // --- CASE 1: Already has an account ---
+  // Check if user has an account
   if (user.hedera_account_id && isValidHederaAccountId(user.hedera_account_id)) {
     console.log(`Account already activated: ${user.hedera_account_id}`);
     return {
@@ -45,7 +45,7 @@ export async function activateHederaAccount(userId: string, amount: number = 1) 
     };
   }
 
-  // --- CASE 2: Create new account with auto-association ---
+  // Create new account with auto-association ---
   const operatorId = AccountId.fromString(process.env.HEDERA_OPERATOR_ID!);
   const operatorKey = PrivateKey.fromStringDer(process.env.HEDERA_OPERATOR_KEY!);
   const client = Client.forTestnet().setOperator(operatorId, operatorKey);
@@ -57,7 +57,7 @@ export async function activateHederaAccount(userId: string, amount: number = 1) 
     const accountCreateTx = new AccountCreateTransaction()
       .setKey(newPublicKey)
       .setInitialBalance(new Hbar(amount))
-      .setMaxAutomaticTokenAssociations(-1) // 🔑 Unlimited auto-associations
+      .setMaxAutomaticTokenAssociations(-1) 
       .freezeWith(client);
 
     const accountCreateTxSign = await accountCreateTx.sign(operatorKey);
@@ -172,7 +172,7 @@ async function fallbackAccountActivation(
 
 /**
  * Simple key encode/decode.
- * ⚠️ Use secure encryption in production!
+ * ⚠️ Must be more secure for actual production use!
  */
 function encryptPrivateKey(privateKey: PrivateKey): string {
   return Buffer.from(privateKey.toStringDer()).toString("base64");

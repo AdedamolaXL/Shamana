@@ -1,4 +1,5 @@
 "use client";
+
 import { FaPlay, FaPause, FaHeart, FaBookmark } from "react-icons/fa";
 
 interface PlaylistActionsProps {

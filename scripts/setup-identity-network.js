@@ -19,7 +19,7 @@ async function setupIdentityNetwork() {
     
     logEnvStatus();
 
-    // Create DID and VC topics
+    // Creates DID and VC topics
     const didTopicTx = await new TopicCreateTransaction()
       .setTopicMemo("DID Topic for Music App")
       .freezeWith(client);
@@ -43,7 +43,7 @@ async function setupIdentityNetwork() {
     console.log(`✅ Created DID Topic: ${didTopicId}`);
     console.log(`✅ Created VC Topic: ${vcTopicId}`);
 
-    // Create address book
+    // Creates address book
     const addressBook = {
       appnetName: "Music Streaming App",
       didTopicId: didTopicId.toString(),
@@ -65,7 +65,7 @@ async function setupIdentityNetwork() {
 
     console.log(`✅ Created Address Book: ${addressBookFileId}`);
 
-    // Store these IDs in environment variables or database
+    // Storing these IDs in environment variables
     console.log("\n📋 Add these to your environment variables:");
     console.log(`HEDERA_DID_TOPIC_ID=${didTopicId}`);
     console.log(`HEDERA_VC_TOPIC_ID=${vcTopicId}`);

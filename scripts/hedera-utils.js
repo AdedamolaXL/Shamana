@@ -33,7 +33,7 @@ function parsePrivateKey(str) {
   }
 }
 
-// Get operator account ID and key
+// Gets operator account ID and key
 function getOperator() {
   if (!process.env.HEDERA_OPERATOR_ID || !process.env.HEDERA_OPERATOR_KEY) {
     throw new Error('Hedera operator credentials are not set. Please check your .env.local file.');
@@ -45,7 +45,7 @@ function getOperator() {
   return { operatorId, operatorKey };
 }
 
-// Initialize Hedera client
+// Initializes Hedera client
 export function initializeHederaClient() {
   const operatorId = process.env.HEDERA_OPERATOR_ID;
   const operatorKey = process.env.HEDERA_OPERATOR_KEY;
@@ -56,7 +56,7 @@ export function initializeHederaClient() {
 
   const client = Client.forTestnet();
   
-  // Convert to AccountId and PrivateKey objects
+  // Converts to AccountId and PrivateKey objects
   const operatorIdObj = AccountId.fromString(operatorId);
   const operatorKeyObj = PrivateKey.fromStringDer(operatorKey);
   
@@ -64,12 +64,12 @@ export function initializeHederaClient() {
 
   return {
     client,
-    operatorId: operatorIdObj, // Return as AccountId object
-    operatorKey: operatorKeyObj // Return as PrivateKey object
+    operatorId: operatorIdObj, 
+    operatorKey: operatorKeyObj 
   };
 }
 
-// Validate environment variables
+// Validates environment variables
 function validateEnvVars(requiredVars) {
   const missingVars = requiredVars.filter(varName => !process.env[varName]);
   
@@ -78,7 +78,7 @@ function validateEnvVars(requiredVars) {
   }
 }
 
-// Log environment variable status
+// Logs environment variable status
 function logEnvStatus() {
   console.log('Environment variables status:');
   console.log('HEDERA_OPERATOR_ID:', process.env.HEDERA_OPERATOR_ID || 'Not set');
@@ -88,7 +88,7 @@ function logEnvStatus() {
   console.log('---');
 }
 
-// Export all functions
+// Exports all functions
 module.exports = {
   loadEnvVariables,
   parsePrivateKey,

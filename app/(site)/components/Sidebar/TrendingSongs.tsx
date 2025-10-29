@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { TrendingSongsSectionProps } from "./types";
 import Image from "next/image";
@@ -23,7 +24,7 @@ export const TrendingSongsSection: React.FC<TrendingSongsSectionProps> = ({ isLo
           .from('songs')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(16);
+          .limit(10);
 
         if (error) {
           console.error('Error fetching trending songs:', error);

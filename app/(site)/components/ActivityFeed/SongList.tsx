@@ -1,4 +1,5 @@
 "use client";
+
 import { SongListProps } from "./types";
 import usePlayer from "@/hooks/usePlayer";
 import { FaPlus } from "react-icons/fa";
@@ -40,7 +41,7 @@ export const SongList: React.FC<SongListProps> = ({
 
   return (
     <div className="flex flex-col gap-1.5 mb-4 relative z-10">
-      {/* Show only first 3 songs - now properly sorted by most recent */}
+      {/* Show only first 3 songs */}
       {songs.slice(0, 3).map((song: string, index: number) => {
         const songInPlaylist = sortedPlaylistSongs[index]?.songs;
         const songId = songInPlaylist?.id;

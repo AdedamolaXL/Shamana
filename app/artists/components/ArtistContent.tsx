@@ -1,7 +1,8 @@
 "use client"
+
 import { Artist } from "@/types";
 import { useRouter } from "next/navigation";
-import { FaUser, FaMusic } from "react-icons/fa";
+import { FaUser } from "react-icons/fa";
 import Image from "next/image";
 import useLoadArtistImage from "@/hooks/useLoadArtistImage";
 

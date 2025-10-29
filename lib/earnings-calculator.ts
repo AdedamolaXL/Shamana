@@ -1,7 +1,6 @@
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 
-// lib/earnings-calculator.ts
 export interface PlaylistValue {
   value: number;
   songsCount: number;
@@ -17,7 +16,7 @@ export class EarningsCalculator {
    */
   static async calculatePlaylistValue(
     playlistId: string, 
-    supabase: any // Accept supabase client
+    supabase: any
   ): Promise<PlaylistValue> {
     // Get playlist with songs and their durations
     const { data: playlist, error } = await supabase
@@ -100,11 +99,11 @@ export class EarningsCalculator {
 
       if (error) {
         console.error('Error fetching reputation:', error);
-        return 1.0; // Default rating
+        return 1.0; 
       }
 
       if (!reputationData) {
-        return 1.0; // Default rating if no reputation data
+        return 1.0; 
       }
 
       const { upvotes = 0, downvotes = 0 } = reputationData;
@@ -121,7 +120,7 @@ export class EarningsCalculator {
 
     } catch (error) {
       console.error('Error calculating rating:', error);
-      return 1.0; // Default rating
+      return 1.0;
     }
   }
 
@@ -145,7 +144,7 @@ export class EarningsCalculator {
    */
   static calculateClaimableAmount(currentEntitlement: number, lastClaimedValue: number): number {
     const claimable = currentEntitlement - lastClaimedValue;
-    return Math.max(0, claimable); // Ensure non-negative
+    return Math.max(0, claimable); 
   }
 
   static async calculateArtistEarnings(

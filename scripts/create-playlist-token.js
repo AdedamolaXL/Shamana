@@ -19,10 +19,10 @@ async function createPlaylistTokens() {
     
     logEnvStatus();
 
-    // Generate supply key for NFTs
+    // Generates supply key for NFTs
     const nftSupplyKey = PrivateKey.generateECDSA();
 
-    // Create the NFT token
+    // Creates the NFT token
     const nftCreate = new TokenCreateTransaction()
       .setTokenName("Playlist NFTs")
       .setTokenSymbol("sham")
@@ -35,35 +35,35 @@ async function createPlaylistTokens() {
       .setSupplyKey(nftSupplyKey)
       .freezeWith(client);
 
-    // Sign the transaction with the operator key
+    // Signs the transaction with the operator key
     const nftCreateTxSign = await nftCreate.sign(operatorKey);
     const nftCreateSubmit = await nftCreateTxSign.execute(client);
     const nftCreateRx = await nftCreateSubmit.getReceipt(client);
 
-    // Get the NFT token ID
+    // Gets the NFT token ID
     const nftTokenId = nftCreateRx.tokenId;
 
     if (!nftTokenId) {
       throw new Error('Failed to create NFT token');
     }
 
-    // Create the Fungible Token for rewards
+    // Creates the Fungible Token for rewards
     const ftCreate = new TokenCreateTransaction()
       .setTokenName("Playlist Mana")
       .setTokenSymbol("mana")
       .setTokenType(TokenType.FungibleCommon)
       .setDecimals(0)
-      .setInitialSupply(1000000) // 1 million initial supply
+      .setInitialSupply(1000000)
       .setTreasuryAccountId(operatorId)
-      .setSupplyKey(operatorKey) // Use operator key for FT supply
+      .setSupplyKey(operatorKey) 
       .freezeWith(client);
 
-    // Sign the transaction with the operator key
+    // Signs the transaction with the operator key
     const ftCreateTxSign = await ftCreate.sign(operatorKey);
     const ftCreateSubmit = await ftCreateTxSign.execute(client);
     const ftCreateRx = await ftCreateSubmit.getReceipt(client);
 
-    // Get the FT token ID
+    // Gets the FT token ID
     const ftTokenId = ftCreateRx.tokenId;
 
     if (!ftTokenId) {

@@ -1,6 +1,6 @@
 "use client";
+
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { PlaylistWithSongs, Song } from "@/types";
 import toast from "react-hot-toast";
 import { useUser } from "@/hooks/useUser";
@@ -48,8 +48,6 @@ const PlaylistPageClient: React.FC<PlaylistPageClientProps> = ({ playlist, allSo
   const [isPlayingPlaylist, setIsPlayingPlaylist] = useState(false);
   const [isControllingPlaylist, setIsControllingPlaylist] = useState(false);
   const [isPulsing, setIsPulsing] = useState(true); 
-
-  const router = useRouter();
   const { user } = useUser();
   const player = usePlayer();
   const onPlay = useOnPlay(allSongs);
@@ -261,7 +259,7 @@ useEffect(() => {
   };
   
 
-  // Handle playlist play/pause - UPDATED
+  // Handle playlist play/pause 
   const handlePlayPausePlaylist = () => {
     const playlistSongs = getPlaylistSongs();
     
@@ -296,16 +294,16 @@ useEffect(() => {
   };
   
   
-  // Handle when user clicks on individual songs - UPDATED
+  // Handle when user clicks on individual songs 
   const handleSongClick = (songId: string) => {
     const playlistSongs = getPlaylistSongs();
     const playlistSongIds = playlistSongs.map(song => song.id);
     
-    // If this song is part of the current playlist, we're now controlling the playlist
+
     if (playlistSongIds.includes(songId)) {
       setIsControllingPlaylist(true);
       player.setIds(playlistSongIds);
-      player.setPlaylistContext(currentPlaylist.id); // SET PLAYLIST CONTEXT
+      player.setPlaylistContext(currentPlaylist.id);
     }
     
     // Play the specific song

@@ -1,4 +1,5 @@
 "use client";
+
 import { SidebarProps } from "./types";
 import { TrendingSongsSection } from "./TrendingSongs";
 

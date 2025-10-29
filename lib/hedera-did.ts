@@ -1,22 +1,9 @@
 import { createDID } from '@hiero-did-sdk/registrar';
-import { HederaClientConfiguration, HederaClientService } from '@hiero-did-sdk/client';
-import { HcsTopicService } from '@hiero-did-sdk/hcs';
+import { HederaClientConfiguration } from '@hiero-did-sdk/client';
 import { generateHederaKeys, encryptPrivateKey } from './hedera-keys';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { activateHederaAccount } from './hedera-account';
-
-const hederaConfig: HederaClientConfiguration = {
-  networks: [
-    {
-      network: 'testnet',
-      operatorId: process.env.HEDERA_OPERATOR_ID!,
-      operatorKey: process.env.HEDERA_OPERATOR_KEY!,
-    },
-  ],
-};
-
-const clientService = new HederaClientService(hederaConfig);
 
 export async function createUserDid(userId: string, userEmail: string) {
   try {
@@ -39,7 +26,7 @@ export async function createUserDid(userId: string, userEmail: string) {
       };
     }
 
-    // First, activate the Hedera account to get a proper account ID
+    // Activate the Hedera account to get a proper account ID
     console.log('Activating Hedera account for user:', userId);
     const accountResult = await activateHederaAccount(userId, 10); // 5 HBAR initial balance
     

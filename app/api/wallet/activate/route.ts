@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createRouteHandlerClient({ cookies });
     
-    // Get the current session
+    // Gets the current session
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session) {
@@ -21,10 +21,10 @@ export async function POST(request: NextRequest) {
     
     const { amount } = await request.json();
     
-    // Activate the user's Hedera account using the corrected function
+    // Activate the user's Hedera account
     const result = await activateHederaAccount(session.user.id, amount || 10);
     
-    // Validate the account ID format
+    // Validates the account ID format
     if (result.accountId && !isValidHederaAccountId(result.accountId)) {
       return NextResponse.json(
         { error: 'Invalid account ID format generated' },

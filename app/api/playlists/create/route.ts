@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     console.log("✅ Playlist created with ID:", newPlaylist.id);
 
-    // --- Mint NFT if token configured ---
+    // Mint NFT if token configured
     const tokenId = process.env.HEDERA_NFT_TOKEN_ID;
     if (!tokenId) {
       console.warn("HEDERA_NFT_TOKEN_ID not set → skipping NFT mint");
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
           method: "POST",
           headers: {
       "Content-Type": "application/json",
-      Cookie: request.headers.get("cookie") || "", // 👈 forward auth cookies
+      Cookie: request.headers.get("cookie") || "", 
     },
           body: JSON.stringify({
             playlistId: newPlaylist.id,
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     console.log("NFT API response:", nftData);
 
     if (nftResponse.ok && nftData.success && nftData.nftResult) {
-      // --- Update playlist with NFT info ---
+      // Update playlist with NFT info
       await supabase
         .from("playlists")
         .update({
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
         })
         .eq("id", newPlaylist.id);
 
-      // --- Add to creator’s collection ---
+      // Add to creator’s collection
       await supabase.from("playlist_collections").insert({
         playlist_id: newPlaylist.id,
         user_id: session.user.id,

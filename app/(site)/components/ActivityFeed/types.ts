@@ -1,5 +1,4 @@
 import { ActivityItem } from "@/app/(site)/components/shared/types";
-import { Song } from "@/types";
 
 export interface ActivityFeedProps {
   activities: ActivityItem[];

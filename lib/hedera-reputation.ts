@@ -1,4 +1,4 @@
-import { HcsMessageService, HcsTopicService } from '@hiero-did-sdk/hcs';
+import { HcsMessageService } from '@hiero-did-sdk/hcs';
 import { HederaClientConfiguration, HederaClientService } from '@hiero-did-sdk/client';
 import { PrivateKey } from '@hashgraph/sdk';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
@@ -17,8 +17,6 @@ const hederaConfig: HederaClientConfiguration = {
 
 const clientService = new HederaClientService(hederaConfig);
 const client = clientService.getClient('testnet');
-
-const hcsTopicService = new HcsTopicService(client, { maxSize: 100 });
 const hcsMessageService = new HcsMessageService(client, { maxSize: 100 });
 
 export interface ReputationVote {
@@ -149,7 +147,7 @@ export class ReputationSystem {
   }
 
   /**
-   * Get user's DID from database (public method)
+   * Get user's DID from database
    */
   public async getUserDID(userId: string): Promise<string> {
     try {

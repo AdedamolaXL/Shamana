@@ -37,7 +37,7 @@ export const usePlaylistPlayback = ({ songs }: UsePlaylistPlaybackProps) => {
     // Start playing a new playlist
     else {
       player.setId(firstSongId);
-      player.setPlaylistContext(playlistId); // Set playlist context
+      player.setPlaylistContext(playlistId); 
       if (songs && songs.length > 0) {
         player.setIds(songs.map((song) => song.id));
       }

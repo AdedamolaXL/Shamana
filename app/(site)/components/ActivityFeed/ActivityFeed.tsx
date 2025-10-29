@@ -1,4 +1,5 @@
 "use client";
+
 import { ActivityFeedProps } from "./types";
 import { ActivityCard } from "./ActivityCard";
 
@@ -8,9 +9,9 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
   error,
   onPlaylistClick,
   onPlaySong,
-  onPlaylistPlay, // New prop
+  onPlaylistPlay, 
   playingStates,
-  isPlaylistPlaying, // New prop
+  isPlaylistPlaying,
 }) => {
   if (isLoading) {
     return (
@@ -37,8 +38,8 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
           index={index}
           onPlaylistClick={onPlaylistClick}
           onPlaySong={onPlaySong}
-          onPlaylistPlay={onPlaylistPlay} // Pass new prop
-          isPlaylistPlaying={isPlaylistPlaying} // Pass new prop
+          onPlaylistPlay={onPlaylistPlay} 
+          isPlaylistPlaying={isPlaylistPlaying} 
         />
       ))}
     </div>

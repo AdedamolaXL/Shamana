@@ -1,4 +1,5 @@
 "use client"
+
 import { Playlist } from "@/types";
 import PlaylistItem from "./PlaylistItem";
 import { FaMusic } from "react-icons/fa";

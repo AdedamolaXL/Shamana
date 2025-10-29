@@ -1,7 +1,7 @@
 "use client"
 import { useRouter } from "next/navigation";
 import { twMerge } from "tailwind-merge";
-import { FaUserAlt, FaUpload, FaCog, FaUserCircle } from "react-icons/fa";
+import { FaUpload, FaCog, FaUserCircle } from "react-icons/fa";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { toast } from "react-hot-toast";
 import { useUser } from "@/hooks/useUser";
@@ -24,6 +24,7 @@ const Header: React.FC<HeaderProps> = ({ children, className }) => {
     const supabaseClient = useSupabaseClient();
     const [activeLink, setActiveLink] = useState(''); 
 
+    // Handle user logout
     const handleLogout = async () => {
         const { error } = await supabaseClient.auth.signOut();
         router.refresh();
@@ -35,6 +36,7 @@ const Header: React.FC<HeaderProps> = ({ children, className }) => {
         }
     };
 
+    // Handle upload button click
     const handleUpload = () => {
         if (!user) {
             return authModal.onOpen("sign_in");
@@ -42,11 +44,13 @@ const Header: React.FC<HeaderProps> = ({ children, className }) => {
         return uploadModal.onOpen();
     };
 
+    // Handle navigation and set active link
     const handleNavigation = (path: string, linkName: string) => {
         setActiveLink(linkName);
         router.push(path);
     };
 
+    // Navigation items
     const navItems = [
         { 
             name: 'Library', 
@@ -65,6 +69,7 @@ const Header: React.FC<HeaderProps> = ({ children, className }) => {
         }
     ];
 
+    
     return (
         <div className={twMerge(`h-fit bg-gradient-to-b from-neutral-900 to-black p-6 w-full`, className)}>
             <div className="flex items-center justify-between p-5 relative max-w-[1600px] mx-auto">
@@ -79,7 +84,7 @@ const Header: React.FC<HeaderProps> = ({ children, className }) => {
                         >
                             <div className="relative">
                                 {/* Main logo container */}
-                                <div className="relative transform transition-all duration-500 group-hover:scale-105 group-hover:rotate-2">
+                                <div className="relative transform transition-all duration-500 group-hover:scale-105 group-hover:rotate-0">
                                     {/* Background glow effect */}
                                     <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 to-emerald-400/20 rounded-2xl blur-md group-hover:blur-lg transition-all duration-500 opacity-0 group-hover:opacity-100"></div>
                                     
@@ -100,9 +105,6 @@ const Header: React.FC<HeaderProps> = ({ children, className }) => {
                                     <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10 group-hover:animate-pulse"></div>
                                 </div>
                                 
-                                {/* Floating particles effect */}
-                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-700 group-hover:animate-bounce"></div>
-                                <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-emerald-300 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-700 group-hover:animate-bounce delay-300"></div>
                             </div>
                         </div>
                         

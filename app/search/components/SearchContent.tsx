@@ -1,4 +1,5 @@
 "use client";
+
 import MediaItem from "@/components/media/MediaItem";
 import { Song } from "@/types";
 import useOnPlay from "@/hooks/useOnPlay";

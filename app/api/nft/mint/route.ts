@@ -22,7 +22,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    // 👇 Mint NFT
+    // Mint NFT
     const nftResult = await mintNft(
       process.env.HEDERA_NFT_TOKEN_ID!,
       [Buffer.from(metadataUri)],
