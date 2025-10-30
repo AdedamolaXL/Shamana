@@ -167,7 +167,6 @@ export class ReputationSystem {
       return user.hedera_did;
     } catch (error) {
       console.error('Error fetching user DID:', error);
-      // Fallback to a default DID format
       return `did:hedera:testnet:${userId}_0.0.${Math.floor(Math.random() * 1000000)}`;
     }
   }

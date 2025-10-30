@@ -17,6 +17,7 @@ export async function GET(request: NextRequest, context: Context) {
       return NextResponse.json({ error: 'Playlist ID is required' }, { status: 400 });
     }
 
+    // Use the HCS-based reputation system instead of database query
     const reputation = await reputationSystem.calculatePlaylistReputation(playlistId);
     const messages = await reputationSystem.getPlaylistReputation(playlistId);
 

@@ -40,8 +40,8 @@ export async function GET(request: NextRequest) {
       .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
       .map((ps: any) => ({
         ...ps.songs,
-        position: ps.position,        // keep ordering info
-        playlistSongId: ps.id         // optional: preserve join row id
+        position: ps.position,      
+        playlistSongId: ps.id         
       }))
   }));
 

@@ -91,8 +91,7 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         userId: session.user.id,
         tokenId: tokenId,
-        amount: Math.floor(listenerAmount), // Listener gets 50%
-        playlistId: playlistId,
+        amount: Math.floor(listenerAmount), 
         claimType: 'earnings'
       }),
     });

@@ -101,13 +101,13 @@ const ArtistPageClient: React.FC<ArtistPageClientProps> = ({ artist }) => {
             </div>
             
             {/* Total Plays - Now from database */}
-            <div className="flex items-center gap-2">
+            {/* <div className="flex items-center gap-2">
               <FaHeadphones className="text-blue-400" />
               <span className="text-white font-medium">
                 {formatNumber(artist.total_plays || 0)} plays
               </span>
             </div>
-            
+             */}
             {/* Total Earnings - Now from database */}
             <div className="flex items-center gap-2">
               <FaCoins className="text-yellow-400" />
@@ -131,9 +131,6 @@ const ArtistPageClient: React.FC<ArtistPageClientProps> = ({ artist }) => {
         </div>
       </section>
 
-      
-
-      {/* Rest of the component remains the same */}
       {/* Songs Section */}
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">

@@ -244,6 +244,8 @@ const Header: React.FC<HeaderProps> = ({ children, className }) => {
                                         <div className="absolute inset-0 rounded-full bg-blue-400 animate-ping opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
                                     </button>
 
+                                    
+
                                     {/* Logout Button */}
                                     <button 
                                         className="bg-gradient-to-r from-rose-500 to-pink-500 px-6 py-2 text-sm font-medium text-white rounded-full hover:from-rose-600 hover:to-pink-600 transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-rose-500/25 border border-rose-500/50"

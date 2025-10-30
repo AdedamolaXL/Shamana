@@ -15,7 +15,7 @@ interface LibraryContentProps {
   artists: Artist[];
 }
 
-type LibraryView = 'all' | 'songs' | 'playlists' | 'artists';
+type LibraryView = 'all' | 'songs' | 'artists';
 
 export const LibraryContent: React.FC<LibraryContentProps> = ({ 
   songs, 
@@ -27,18 +27,115 @@ export const LibraryContent: React.FC<LibraryContentProps> = ({
   const router = useRouter();
 
   const views = [
-    { id: 'all' as LibraryView, label: 'All', icon: FaMusic, count: songs.length + playlists.length + artists.length },
+    { id: 'all' as LibraryView, label: 'All', icon: FaMusic, count: songs.length + artists.length },
     { id: 'songs' as LibraryView, label: 'Songs', icon: FaMusic, count: songs.length },
-    { id: 'playlists' as LibraryView, label: 'Playlists', icon: FaList, count: playlists.length },
     { id: 'artists' as LibraryView, label: 'Artists', icon: FaUser, count: artists.length },
   ];
 
-  const filteredSongs = activeView === 'all' || activeView === 'songs' ? songs : [];
-  const filteredPlaylists = activeView === 'all' || activeView === 'playlists' ? playlists : [];
-  const filteredArtists = activeView === 'all' || activeView === 'artists' ? artists : [];
-
   const handleArtistClick = (artistName: string) => {
     router.push(`/artists/${encodeURIComponent(artistName)}`);
+  };
+
+  // Render view with categorized sections
+  const renderAllView = () => (
+    <div className="space-y-12">
+      {/* Songs Section */}
+      {songs.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-white">Songs</h2>
+            <span className="text-neutral-400 text-sm">
+              {songs.length} {songs.length === 1 ? 'song' : 'songs'}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+            {songs.slice(0, 12).map((song) => (
+              <div
+                key={`song-${song.id}`}
+                className="bg-neutral-800/40 rounded-lg p-4 hover:bg-neutral-700/50 transition-all duration-300 cursor-pointer group"
+                onClick={() => onPlay(song.id)}
+              >
+                <SongGridItem song={song} />
+              </div>
+            ))}
+          </div>
+          {songs.length > 12 && (
+            <div className="text-center pt-4">
+              <button 
+                onClick={() => setActiveView('songs')}
+                className="text-green-400 hover:text-green-300 text-sm font-medium"
+              >
+                View all {songs.length} songs →
+              </button>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Artists Section */}
+      {artists.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-white">Artists</h2>
+            <span className="text-neutral-400 text-sm">
+              {artists.length} {artists.length === 1 ? 'artist' : 'artists'}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+            {artists.slice(0, 12).map((artist) => (
+              <div
+                key={`artist-${artist.id}`}
+                className="bg-neutral-800/40 rounded-lg p-4 hover:bg-neutral-700/50 transition-all duration-300 cursor-pointer group"
+                onClick={() => handleArtistClick(artist.name)}
+              >
+                <ArtistGridItem artist={artist} />
+              </div>
+            ))}
+          </div>
+          {artists.length > 12 && (
+            <div className="text-center pt-4">
+              <button 
+                onClick={() => setActiveView('artists')}
+                className="text-green-400 hover:text-green-300 text-sm font-medium"
+              >
+                View all {artists.length} artists →
+              </button>
+            </div>
+          )}
+        </section>
+      )}
+    </div>
+  );
+
+  // Render individual views (songs, artists)
+  const renderIndividualView = () => {
+    const items = 
+      activeView === 'songs' ? songs :
+      activeView === 'artists' ? artists : [];
+
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
+        {activeView === 'songs' && items.map((song: any) => (
+          <div
+            key={`song-${song.id}`}
+            className="bg-neutral-800/40 rounded-lg p-4 hover:bg-neutral-700/50 transition-all duration-300 cursor-pointer group"
+            onClick={() => onPlay(song.id)}
+          >
+            <SongGridItem song={song} />
+          </div>
+        ))}
+
+        {activeView === 'artists' && items.map((artist: any) => (
+          <div
+            key={`artist-${artist.id}`}
+            className="bg-neutral-800/40 rounded-lg p-4 hover:bg-neutral-700/50 transition-all duration-300 cursor-pointer group"
+            onClick={() => handleArtistClick(artist.name)}
+          >
+            <ArtistGridItem artist={artist} />
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -67,48 +164,15 @@ export const LibraryContent: React.FC<LibraryContentProps> = ({
         })}
       </div>
 
-      {/* Content Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
-        {/* Songs */}
-        {filteredSongs.map((song) => (
-          <div
-            key={`song-${song.id}`}
-            className="bg-neutral-800/40 rounded-lg p-4 hover:bg-neutral-700/50 transition-all duration-300 cursor-pointer group"
-            onClick={() => onPlay(song.id)}
-          >
-            <SongGridItem song={song} />
-          </div>
-        ))}
-
-        {/* Playlists */}
-        {filteredPlaylists.map((playlist) => (
-          <div
-            key={`playlist-${playlist.id}`}
-            className="bg-neutral-800/40 rounded-lg p-4 hover:bg-neutral-700/50 transition-all duration-300 cursor-pointer group"
-            onClick={() => router.push(`/playlists/${playlist.id}`)}
-          >
-            <PlaylistGridItem playlist={playlist} />
-          </div>
-        ))}
-
-        {/* Artists */}
-        {filteredArtists.map((artist) => (
-          <div
-            key={`artist-${artist.id}`}
-            className="bg-neutral-800/40 rounded-lg p-4 hover:bg-neutral-700/50 transition-all duration-300 cursor-pointer group"
-            onClick={() => handleArtistClick(artist.name)}
-          >
-            <ArtistGridItem artist={artist} />
-          </div>
-        ))}
-      </div>
+      {/* Content */}
+      {activeView === 'all' ? renderAllView() : renderIndividualView()}
 
       {/* Empty State */}
-      {(filteredSongs.length === 0 && filteredPlaylists.length === 0 && filteredArtists.length === 0) && (
+      {songs.length === 0 && artists.length === 0 && (
         <div className="text-center py-16 text-neutral-400">
           <FaMusic size={48} className="mx-auto mb-4 opacity-50" />
           <h3 className="text-xl font-semibold mb-2">No items found</h3>
-          <p>Try selecting a different view or check back later.</p>
+          <p>Your library is empty. Start by uploading songs or exploring artists.</p>
         </div>
       )}
     </div>
@@ -154,48 +218,6 @@ const SongGridItem: React.FC<SongGridItemProps> = ({ song }) => {
         <p className="text-neutral-400 text-xs truncate">
           {song.author}
         </p>
-      </div>
-    </div>
-  );
-};
-
-// Playlist Grid Item Component
-interface PlaylistGridItemProps {
-  playlist: Playlist;
-}
-
-const PlaylistGridItem: React.FC<PlaylistGridItemProps> = ({ playlist }) => {
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="relative aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-purple-900/20 to-neutral-800 group-hover:scale-105 transition-transform duration-300 flex items-center justify-center">
-        {playlist.image_path ? (
-          <Image
-            src={playlist.image_path}
-            alt={playlist.name}
-            fill
-            className="object-cover"
-          />
-        ) : (
-          <FaList className="text-neutral-400" size={32} />
-        )}
-        
-        {/* Play Button Overlay */}
-        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <div className="bg-green-500 p-3 rounded-full transform translate-y-2 group-hover:translate-y-0 transition-transform">
-            <FaList className="text-white" size={16} />
-          </div>
-        </div>
-      </div>
-      
-      <div className="flex flex-col gap-1">
-        <h3 className="font-semibold text-white truncate text-sm">
-          {playlist.name}
-        </h3>
-        {playlist.description && (
-          <p className="text-neutral-400 text-xs truncate">
-            {playlist.description}
-          </p>
-        )}
       </div>
     </div>
   );

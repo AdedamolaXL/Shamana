@@ -80,7 +80,7 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({
                   focus:outline-none focus:ring-4 focus:ring-purple-500/50 focus:scale-105
                   active:scale-95 pulse-glow"
                 style={slide.buttonStyle}
-                onClick={slide.onClickHandler} // This will be undefined for some slides
+                onClick={slide.onClickHandler} 
               >
                 {slide.buttonText}
               </button>

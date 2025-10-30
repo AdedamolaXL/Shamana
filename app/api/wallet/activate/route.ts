@@ -7,9 +7,25 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    // First, check if environment variables are configured
+    if (!process.env.HEDERA_OPERATOR_ID || !process.env.HEDERA_OPERATOR_KEY) {
+      console.error('Hedera environment variables missing:', {
+        hasOperatorId: !!process.env.HEDERA_OPERATOR_ID,
+        hasOperatorKey: !!process.env.HEDERA_OPERATOR_KEY
+      });
+      
+      return NextResponse.json(
+        { 
+          error: 'Hedera operator not configured',
+          details: 'Check HEDERA_OPERATOR_ID and HEDERA_OPERATOR_KEY environment variables'
+        },
+        { status: 500 }
+      );
+    }
+
     const supabase = createRouteHandlerClient({ cookies });
     
-    // Gets the current session
+    // Get the current session
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session) {
@@ -21,10 +37,14 @@ export async function POST(request: NextRequest) {
     
     const { amount } = await request.json();
     
+    console.log('Activating account for user:', session.user.id);
+    
     // Activate the user's Hedera account
     const result = await activateHederaAccount(session.user.id, amount || 10);
     
-    // Validates the account ID format
+    console.log('Activation result:', result);
+    
+    // Validate the account ID format
     if (result.accountId && !isValidHederaAccountId(result.accountId)) {
       return NextResponse.json(
         { error: 'Invalid account ID format generated' },
@@ -33,10 +53,13 @@ export async function POST(request: NextRequest) {
     }
     
     return NextResponse.json(result);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Account activation error:', error);
     return NextResponse.json(
-      { error: 'Failed to activate account' },
+      { 
+        error: 'Failed to activate account',
+        details: error.message 
+      },
       { status: 500 }
     );
   }

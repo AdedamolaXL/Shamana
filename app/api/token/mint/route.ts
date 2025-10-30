@@ -18,7 +18,7 @@ export async function POST(req: Request) {
 
     const supabase = createRouteHandlerClient({ cookies });
 
-    // Get recipient's Hedera account from database (should exist from signup)
+    // Get recipient's Hedera account from database 
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('hedera_account_id')
@@ -53,7 +53,6 @@ export async function POST(req: Request) {
 
       if (insertError) {
         console.error('Failed to record token mint:', insertError);
-        // Don't fail the entire request since the tokens were successfully minted
       }
     }
 

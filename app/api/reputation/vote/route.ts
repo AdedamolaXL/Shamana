@@ -31,12 +31,13 @@ export async function POST(request: NextRequest) {
       timestamp: Date.now(),
     };
 
+    // Submit to HCS
     const transactionId = await reputationSystem.submitReputationMessage(voteMessage);
 
     return NextResponse.json({ 
       success: true, 
       transactionId,
-       message: `Successfully ${voteType}d playlist (${voteType === 'upvote' ? '+10' : '-10'} points)` 
+      message: `Successfully ${voteType}d playlist (${voteType === 'upvote' ? '+10' : '-10'} points)` 
     });
   } catch (error) {
     console.error('Error submitting vote:', error);

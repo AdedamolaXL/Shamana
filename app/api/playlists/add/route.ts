@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         playlist_id: playlistId,
         song_id: songId,
         position: nextPosition,
-        user_id: session.user.id  // This tracks who added the song
+        user_id: session.user.id  
       })
       .select(`
         *,
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
     };
 
 
-    // ✅ AUTO-COLLECT: Check if user should automatically collect this playlist
+    // Check if user should automatically collect this playlist
     if (playlist.nft_token_id && playlist.user_id !== session.user.id) {
   // Check if user has already collected this playlist
   const { data: existingCollection } = await supabase
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
         // Optional: Send a toast notification to the user
         console.log('User automatically collected the playlist NFT');
       }
-    }, 1000); // 1 second delay to ensure song addition completes
+    }, 1000); 
   }
 }
   
@@ -175,7 +175,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       message: 'Song added to playlist',
-      // autoCollectionTriggered: !existingCollection && playlist.nft_token_id && playlist.user_id !== session.user.id
       addedBy: newPlaylistSong.user
     });
   } catch (error) {

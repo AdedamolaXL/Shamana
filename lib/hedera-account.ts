@@ -9,6 +9,28 @@ import {
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 
+
+function initializeHederaClientDirect() {
+  const operatorId = process.env.HEDERA_OPERATOR_ID;
+  const operatorKey = process.env.HEDERA_OPERATOR_KEY;
+
+  if (!operatorId || !operatorKey) {
+    throw new Error('Hedera operator credentials not configured');
+  }
+
+  const client = Client.forTestnet();
+  const operatorIdObj = AccountId.fromString(operatorId);
+  const operatorKeyObj = PrivateKey.fromStringDer(operatorKey);
+  
+  client.setOperator(operatorIdObj, operatorKeyObj);
+
+  return {
+    client,
+    operatorId: operatorIdObj, 
+    operatorKey: operatorKeyObj 
+  };
+}
+
 /**
  * Activate or retrieve a Hedera account for a user.
  * - If user already has a valid account, return it.
@@ -16,65 +38,48 @@ import { cookies } from "next/headers";
  * - If creation fails, falls back to alias/EVM activation.
  */
 export async function activateHederaAccount(userId: string, amount: number = 1) {
-  console.log("activateHederaAccount called with userId:", userId);
+  console.log("🔄 activateHederaAccount called with userId:", userId);
 
   if (!userId || userId === "undefined") {
     throw new Error("Invalid user ID provided");
   }
 
   const supabase = createServerComponentClient({ cookies });
-  const { data: user, error } = await supabase
-    .from("users")
-    .select(
-      "hedera_public_key, hedera_private_key_encrypted, hedera_account_id, hedera_evm_address"
-    )
-    .eq("id", userId)
-    .single();
 
-  if (error || !user) {
-    throw new Error("User not found or missing Hedera keys");
-  }
-
-  // Check if user has an account
-  if (user.hedera_account_id && isValidHederaAccountId(user.hedera_account_id)) {
-    console.log(`Account already activated: ${user.hedera_account_id}`);
-    return {
-      success: true,
-      accountId: user.hedera_account_id,
-      alreadyActivated: true,
-    };
-  }
-
-  // Create new account with auto-association ---
-  const operatorId = AccountId.fromString(process.env.HEDERA_OPERATOR_ID!);
-  const operatorKey = PrivateKey.fromStringDer(process.env.HEDERA_OPERATOR_KEY!);
-  const client = Client.forTestnet().setOperator(operatorId, operatorKey);
+  // Create new account
+  const { client, operatorId, operatorKey } = initializeHederaClientDirect();
 
   try {
+    console.log("🔑 Generating new Hedera keys...");
     const newPrivateKey = PrivateKey.generateECDSA();
     const newPublicKey = newPrivateKey.publicKey;
+
+    console.log("🔍 Raw Private Key:", newPrivateKey.toStringRaw());
+    console.log("🔍 Raw Public Key:", newPublicKey.toStringRaw());
 
     const accountCreateTx = new AccountCreateTransaction()
       .setKey(newPublicKey)
       .setInitialBalance(new Hbar(amount))
-      .setMaxAutomaticTokenAssociations(-1) 
+      .setMaxAutomaticTokenAssociations(-1)
       .freezeWith(client);
 
     const accountCreateTxSign = await accountCreateTx.sign(operatorKey);
     const accountCreateSubmit = await accountCreateTxSign.execute(client);
     const accountCreateRx = await accountCreateSubmit.getReceipt(client);
+    
     const newAccountId = accountCreateRx.accountId;
 
     if (!newAccountId) throw new Error("No account ID returned from create");
 
     console.log(`✅ New Hedera account created: ${newAccountId.toString()}`);
+    
+    const encryptedPrivateKey = encryptPrivateKeyProperly(newPrivateKey);
 
-    const encryptedPrivateKey = encryptPrivateKey(newPrivateKey);
-
-    await supabase
+    // Store in database
+    const { error: updateError } = await supabase
       .from("users")
       .update({
-        hedera_account_id: newAccountId.toString(),
+        hedera_account_id: newAccountId.toString(), // Store the ACTUAL account ID
         hedera_public_key: newPublicKey.toStringDer(),
         hedera_private_key_encrypted: encryptedPrivateKey,
         hedera_evm_address: newPublicKey.toEvmAddress(),
@@ -82,13 +87,29 @@ export async function activateHederaAccount(userId: string, amount: number = 1) 
       })
       .eq("id", userId);
 
+    // Verify storage worked
+if (!updateError) {
+  const { data: verifyData } = await supabase
+    .from('users')
+    .select('hedera_private_key_encrypted')
+    .eq('id', userId)
+    .single();
+  
+  if (verifyData) {
+
+    const storedDer = verifyData.hedera_private_key_encrypted;
+    console.log("🔐 Storage verification - Stored DER:", storedDer);
+    console.log("🔐 Storage verification - Matches original:", storedDer === newPrivateKey.toStringDer());
+  }
+}
+    
     return {
       success: true,
-      accountId: newAccountId.toString(),
+      accountId: newAccountId.toString(), 
       alreadyActivated: false,
     };
   } catch (err) {
-    console.error("Account creation failed, trying fallback:", err);
+    console.error("❌ Account creation failed:", err);
     return await fallbackAccountActivation(
       userId,
       amount,
@@ -101,6 +122,7 @@ export async function activateHederaAccount(userId: string, amount: number = 1) 
     await client.close();
   }
 }
+
 
 /**
  * Validate Hedera account ID format (0.0.xxxx).
@@ -172,12 +194,30 @@ async function fallbackAccountActivation(
 
 /**
  * Simple key encode/decode.
- * ⚠️ Must be more secure for actual production use!
  */
-function encryptPrivateKey(privateKey: PrivateKey): string {
-  return Buffer.from(privateKey.toStringDer()).toString("base64");
+function encryptPrivateKeyProperly(privateKey: PrivateKey): string {
+  // Use the DER format consistently
+  const privateKeyDer = privateKey.toStringDer();
+  console.log("🔑 Private Key DER:", privateKeyDer);
+
+  return privateKeyDer;
 }
-function decryptPrivateKey(encryptedKey: string): PrivateKey {
-  const keyDer = Buffer.from(encryptedKey, "base64").toString("utf8");
-  return PrivateKey.fromStringDer(keyDer);
+
+export function decryptPrivateKeyProperly(encryptedKey: string): PrivateKey {
+  try {
+    // Convert from base64 back to DER string
+    const privateKeyDer = Buffer.from(encryptedKey, 'base64').toString('utf8');
+    console.log("🔑 Decrypted DER:", privateKeyDer);
+    
+    // Parse the DER string back to PrivateKey object
+    return PrivateKey.fromStringDer(privateKeyDer);
+  } catch (error) {
+    console.error("❌ Error decrypting private key:", error);
+    throw new Error("Failed to decrypt private key");
+  }
+}
+
+export function decryptPrivateKey(encryptedKey: string): PrivateKey {
+  console.log("🔑 Raw DER from database:", encryptedKey);
+  return PrivateKey.fromStringDer(encryptedKey);
 }

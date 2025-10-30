@@ -20,13 +20,12 @@ const HomeClient: React.FC<HomeClientProps> = ({
   const [songs, setSongs] = useState(initialSongs);
   const [error, setError] = useState<ErrorState | null>(null);
 
-  // Use the new real-time activity feed hook
   const { activities: recentActivities, isLoading } = useActivityFeed();
   
   const router = useRouter();
   const onPlay = useOnPlay(songs);
 
-  // Use the new playlist playback hook
+  // playlist playback hook
   const { playingStates, playPlaylist, isPlaylistPlaying } = usePlaylistPlayback({ 
     songs 
   });

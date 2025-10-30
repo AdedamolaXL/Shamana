@@ -30,7 +30,7 @@ const CreatePlaylistModal: React.FC<CreatePlaylistModalProps> = ({
     register,
     handleSubmit,
     reset,
-    setValue, // Add setValue
+    setValue, 
     formState: { errors }
   } = useForm<FieldValues>({
     defaultValues: {

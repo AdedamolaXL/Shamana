@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const LibraryPage = async () => {
-  // Fetch all data in parallel
+  // Fetch all data in parallel (keeping playlists fetch for now but not using it)
   const [songs, playlists, artists] = await Promise.all([
     getSongs(),
     getPlaylists(),
@@ -21,13 +21,13 @@ const LibraryPage = async () => {
           <div>
             <h1 className="text-white text-3xl font-bold">Your Library</h1>
             <p className="text-neutral-400 mt-2">
-              {songs.length} songs • {playlists.length} playlists • {artists.length} artists
+              {songs.length} songs • {artists.length} artists
             </p>
           </div>
         </div>
         <LibraryContent 
           songs={songs} 
-          playlists={playlists} 
+          playlists={[]} // Pass empty array for playlists
           artists={artists} 
         />
       </div>

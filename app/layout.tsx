@@ -37,17 +37,17 @@ export default async function RootLayout({
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
         </head>
             <body>
-                <ToasterProvider />
+               <ToasterProvider />
                 <SupabaseProvider>
                     <UserProvider>
-                        <ModalProvider />
-                        <div className="">
-                            <Header />
-                            <main className="max-w-[1200px] mx-auto px-[20px]">
-                                {children}
-                            </main>
-                            <Player />
-                        </div>
+                            <ModalProvider />
+                            <div className="">
+                                <Header />
+                                <main className="max-w-[1200px] mx-auto px-[20px]">
+                                    {children}
+                                </main>
+                                <Player />
+                            </div>
                     </UserProvider>
                 </SupabaseProvider>
             </body>

@@ -1,5 +1,4 @@
 import { createDID } from '@hiero-did-sdk/registrar';
-import { HederaClientConfiguration } from '@hiero-did-sdk/client';
 import { generateHederaKeys, encryptPrivateKey } from './hedera-keys';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
@@ -42,7 +41,7 @@ export async function createUserDid(userId: string, userEmail: string) {
     const { did, didDocument } = await createDID({
       clientOptions: {
         network: 'testnet',
-        accountId: process.env.HEDERA_OPERATOR_ID!,// Use the properly created account ID
+        accountId: process.env.HEDERA_OPERATOR_ID!,
         privateKey: process.env.HEDERA_OPERATOR_KEY!,
       },
     });
@@ -57,7 +56,7 @@ export async function createUserDid(userId: string, userEmail: string) {
         hedera_public_key: publicKey.toStringDer(),
         hedera_private_key_encrypted: encryptedPrivateKey,
         hedera_evm_address: evmAddress,
-        hedera_account_id: accountResult.accountId, // Store the proper account ID
+        hedera_account_id: accountResult.accountId, 
         did_created_at: new Date().toISOString()
       })
       .eq('id', userId);

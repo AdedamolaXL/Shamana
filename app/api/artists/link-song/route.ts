@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Artist name and song ID are required" }, { status: 400 });
     }
 
-    // First, get or create the artist
+    // First,get or create the artist
     const { data: artist, error: artistError } = await supabase
       .from('artists')
       .select('id')

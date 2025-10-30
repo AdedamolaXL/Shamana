@@ -131,7 +131,7 @@ export async function POST(req: Request) {
       });
       
       if (Buffer.byteLength(fallbackMetadata, 'utf8') > 100) {
-        // Last resort: just the IPFS hash as a string (no JSON)
+   
         finalMetadata = metadataCid;
         if (Buffer.byteLength(finalMetadata, 'utf8') > 100) {
           throw new Error("Metadata too large even after compression");

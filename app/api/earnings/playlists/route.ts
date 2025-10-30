@@ -49,6 +49,8 @@ export async function GET(req: Request) {
             earning.last_claimed_value
           );
 
+          const listenerShare = claimableAmount * 0.5;
+
           const latestContribution = earning.playlist_songs?.[0]?.added_at || 
                                    earning.playlists?.created_at || 
                                    earning.updated_at;
@@ -61,7 +63,7 @@ export async function GET(req: Request) {
             last_claimed_value: earning.last_claimed_value,
             total_claimed: earning.total_claimed,
             current_entitlement: currentEntitlement,
-            claimable_amount: claimableAmount,
+            claimable_amount: listenerShare,
             playlist_value: playlistValue.value,
             share_coefficient: shareCoefficient,
             last_updated: latestContribution
