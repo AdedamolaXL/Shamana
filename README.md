@@ -4,6 +4,11 @@
 
 Shamana is a music streaming protocol that leverages decentralized technology (Hedera Hashgraph) to empower users with true ownership of their playlists and contributions. Users can create playlists, collaborate with others, and earn token rewards for their contributions.
 
+## Important Links
+- [Website](https://shamaana.vercel.app/)
+- [Pitch Deck](https://docs.google.com/presentation/d/1Ng5w-oBplFRw3UkP68_sGgQnCZfkeS-yr__VCgXFgEw/edit?usp=sharing)
+- [Certification Link](https://drive.google.com/file/d/1IC4xH1dlFowICvgZ96aoQNCwXSq0jffg/view?usp=sharing)
+
 ## FEATURES
 
 - User Authentication: Secure login via Supabase with Google OAuth
@@ -87,9 +92,149 @@ This economic model makes blockchain-based music monetization financially viable
 
 ### Architecture Diagram
 
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         SHAMANA MUSIC PLATFORM                       │
+│                        (Next.js 13 App Router)                       │
+└─────────────────────────────────────────────────────────────────────┘
+                                    │
+                ┌───────────────────┼───────────────────┐
+                │                   │                   │
+                ▼                   ▼                   ▼
+    ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
+    │   User Layer     │ │   Content Layer  │ │   Social Layer   │
+    │  - Auth/Profile  │ │  - Upload Songs  │ │  - Playlists     │
+    │  - Library       │ │  - Artists       │ │  - Contributors  │
+    │  - Player        │ │  - Search        │ │  - Activity Feed │
+    └──────────────────┘ └──────────────────┘ └──────────────────┘
+                │                   │                   │
+                └───────────────────┼───────────────────┘
+                                    │
+                    ┌───────────────┴───────────────┐
+                    │                               │
+                    ▼                               ▼
+        ┌─────────────────────┐       ┌─────────────────────┐
+        │  Supabase Backend   │       │   Storage Layer     │
+        │  - PostgreSQL DB    │       │  - Pinata IPFS      │
+        │  - Auth             │       │  - Cloudinary       │
+        │  - Storage Buckets  │       │  - Metadata Store   │
+        └─────────────────────┘       └─────────────────────┘
+                    │
+                    │
+                    ▼
+    ════════════════════════════════════════════════════════
+    ║           HEDERA INTEGRATION LAYER                   ║
+    ════════════════════════════════════════════════════════
+                    │
+        ┌───────────┼───────────┬───────────┬───────────┐
+        │           │           │           │           │
+        ▼           ▼           ▼           ▼           ▼
+    ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐
+    │ [H1]   │ │ [H2]   │ │ [H3]   │ │ [H4]   │ │ [H5]   │
+    │Account │ │  DID   │ │  NFT   │ │Fungible│ │  HCS   │
+    │Service │ │Service │ │Minting │ │ Token  │ │Reputation│
+    │        │ │        │ │        │ │Rewards │ │ Topic  │
+    └────────┘ └────────┘ └────────┘ └────────┘ └────────┘
+        │           │           │           │           │
+        │           │           │           │           │
+        ▼           ▼           ▼           ▼           ▼
+    ┌────────────────────────────────────────────────────────┐
+    │            HEDERA TESTNET NETWORK                       │
+    │  - Account Creation (unlimited auto-association)       │
+    │  - DID Registry (identity management)                  │
+    │  - NFT Token (Playlist ownership)                      │
+    │  - Fungible Token "MANA" (earnings/rewards)            │
+    │  - HCS Topics (reputation & voting)                    │
+    └────────────────────────────────────────────────────────┘
+```
+
 
 
 ### Detailed Data Flow
+
+## Hedera Integration Points Detail
+
+### **[H1] Account Service** (`lib/hedera-account.ts`)
+```
+Location: /api/wallet/activate
+Purpose: Create Hedera accounts on user signup
+Features:
+  - Auto-generates ECDSA keypair
+  - Creates account with unlimited token auto-association
+  - Stores account ID in Supabase users table
+  - Initial HBAR funding (1-10 HBAR)
+```
+
+### **[H2] DID Service** (`lib/hedera-did.ts`)
+```
+Location: /api/did/create
+Purpose: Decentralized identity for users
+Features:
+  - Uses @hiero-did-sdk/registrar
+  - Creates DID Document on signup
+  - Links DID to Hedera account
+  - Stores in users.hedera_did field
+```
+
+### **[H3] NFT Minting** (`lib/hedera-tokens.ts::mintNft`)
+```
+Locations: 
+  - /api/nft/mint (playlist creation)
+  - /api/nft/collect (playlist collection)
+Purpose: Tokenize playlists as NFTs
+Features:
+  - Mints NFT when playlist created (creator copy)
+  - Mints NFT when user "collects" playlist
+  - Metadata stored on IPFS via Pinata
+  - Tracks ownership in playlist_collections table
+  - Token ID: HEDERA_NFT_TOKEN_ID (env var)
+```
+
+### **[H4] Fungible Token Rewards** (`lib/hedera-tokens.ts::mintFungible`)
+```
+Location: /api/token/mint
+Purpose: Earnings system for contributors
+Features:
+  - Token: "MANA" (Playlist Mana)
+  - Mints tokens based on contribution formula:
+    PV(t) = (Songs × Minutes) × Collectors × Rating
+  - 50% to listener, 50% split among artists
+  - Tracks in playlist_earnings & artist_earnings tables
+  - Claimable via /api/earnings/claim
+```
+
+### **[H5] HCS Reputation System** (`lib/hedera-reputation.ts`)
+```
+Location: /api/reputation/*
+Purpose: On-chain voting & reputation
+Features:
+  - HCS Topic for reputation messages
+  - Upvote (+10 points) / Downvote (-10 points)
+  - Messages include DID for verification
+  - Immutable audit trail
+  - Score calculation: (upvotes × 10) - (downvotes × 10)
+  - Used in earnings formula (Rating component)
+```
+
+## Data Flow Example: User Collects Playlist
+```
+1. User clicks "Collect as NFT" button
+   │
+   ▼
+2. POST /api/nft/collect
+   │
+   ├─→ Fetch playlist metadata from Supabase
+   ├─→ Upload metadata to IPFS (Pinata)
+   ├─→ [H3] Mint NFT with IPFS URI
+   │   └─→ Hedera: TokenMintTransaction
+   ├─→ [H3] Transfer NFT to user's account
+   │   └─→ Hedera: TransferTransaction
+   └─→ Record in playlist_collections table
+   │
+   ▼
+3. User now owns playlist NFT
+   - Can view in /account
+   - Auto-collects when contributing songs
 
 ### Deployed Hedera IDs
 - HEDERA_NFT_TOKEN_ID=0.0.6917190
