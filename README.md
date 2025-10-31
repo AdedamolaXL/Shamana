@@ -4,6 +4,11 @@
 
 Shamana is a music streaming protocol that leverages decentralized technology (Hedera Hashgraph) to empower users with true ownership of their playlists and contributions. Users can create playlists, collaborate with others, and earn token rewards for their contributions.
 
+## Important Links
+- [Website](https://shamaana.vercel.app/)
+- [Pitch Deck](https://docs.google.com/presentation/d/1Ng5w-oBplFRw3UkP68_sGgQnCZfkeS-yr__VCgXFgEw/edit?usp=sharing)
+- [Certification Link](https://drive.google.com/file/d/1IC4xH1dlFowICvgZ96aoQNCwXSq0jffg/view?usp=sharing)
+
 ## FEATURES
 
 - User Authentication: Secure login via Supabase with Google OAuth
