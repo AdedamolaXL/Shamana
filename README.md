@@ -10,6 +10,7 @@ Shamana is a music streaming protocol that leverages decentralized technology (H
 - [Website](https://shamaana.vercel.app/)
 - [Pitch Deck](https://docs.google.com/presentation/d/1Ng5w-oBplFRw3UkP68_sGgQnCZfkeS-yr__VCgXFgEw/edit?usp=sharing)
 - [Certification Link](https://drive.google.com/file/d/1IC4xH1dlFowICvgZ96aoQNCwXSq0jffg/view?usp=sharing)
+- [Youtube Demo](https://youtu.be/ZFiVYlah4Os)
 
 ## FEATURES
 
