@@ -13,46 +13,51 @@ const WalletExportSection = ({ user, hederaAccountId, supabaseClient }: WalletEx
   const [showPrivateKey, setShowPrivateKey] = useState(false)
   const [privateKeyData, setPrivateKeyData] = useState<{privateKey: string; accountId: string} | null>(null)
 
-  const handleHashPackExport = async () => {
-    if (!user) {
-      toast.error("User not found")
-      return
-    }
-
-    setIsLoadingHashPack(true)
-    try {
-      const { data: userData, error } = await supabaseClient
-        .from('users')
-        .select('hedera_private_key_encrypted, hedera_account_id')
-        .eq('id', user.id)
-        .single()
-
-      if (error || !userData || !userData.hedera_private_key_encrypted || !userData.hedera_account_id) {
-        console.error("Error fetching user wallet data:", error)
-        toast.error("No wallet data available for export")
-        return
-      }
-
-      const exportData = {
-        privateKey: userData.hedera_private_key_encrypted,
-        accountId: userData.hedera_account_id,
-      }
-
-      setPrivateKeyData({
-        privateKey: exportData.privateKey,
-        accountId: exportData.accountId
-      })
-      setShowPrivateKey(true)
-      
-      toast.success("Private key retrieved - handle with extreme care!")
-
-    } catch (error) {
-      console.error("Error:", error)
-      toast.error("Failed to retrieve private key")
-    } finally {
-      setIsLoadingHashPack(false)
-    }
+const handleHashPackExport = async () => {
+  if (!user) {
+    toast.error("User not found");
+    return;
   }
+
+  setIsLoadingHashPack(true);
+  try {
+    const { data: userData, error } = await supabaseClient
+      .from('users')
+      .select('hedera_private_key_encrypted, hedera_account_id')
+      .eq('id', user.id)
+      .single();
+
+    if (error || !userData || !userData.hedera_private_key_encrypted || !userData.hedera_account_id) {
+      console.error("Error fetching user wallet data:", error);
+      toast.error("No wallet data available for export");
+      return;
+    }
+
+    console.log("🔍 Stored key from database:", userData.hedera_private_key_encrypted);
+    
+    const rawPrivateKeyDer = userData.hedera_private_key_encrypted;
+    console.log("🔑 Raw DER for export:", rawPrivateKeyDer);
+    
+    if (!rawPrivateKeyDer.startsWith('3030')) {
+      console.error("❌ DER format corrupted!");
+      throw new Error("Private key corrupted in storage");
+    }
+
+    // ✅ USE THE CORRECT STATE VARIABLES
+    setPrivateKeyData({
+      privateKey: rawPrivateKeyDer,
+      accountId: userData.hedera_account_id
+    });
+    setShowPrivateKey(true);
+    toast.success("Private key loaded! Handle with extreme care.");
+
+  } catch (error) {
+    console.error("Error:", error);
+    toast.error("Failed to generate export - key may be corrupted");
+  } finally {
+    setIsLoadingHashPack(false);
+  }
+};
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
