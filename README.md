@@ -1,6 +1,8 @@
 # Shamana - Decentralized Music Streaming
 
-## Primary Track - Social & Creator Economy
+## Primary Track - Gaming and NFTs
+
+## Sub-track 3: Digital Collectibles & NFTs
 
 Shamana is a music streaming protocol that leverages decentralized technology (Hedera Hashgraph) to empower users with true ownership of their playlists and contributions. Users can create playlists, collaborate with others, and earn token rewards for their contributions.
 
