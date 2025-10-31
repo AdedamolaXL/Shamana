@@ -55,7 +55,7 @@ Why HCS: We implemented HCS for our reputation system because its immutable, tim
 - Contribution Tracking: Verifiable record of user contributions
 
 #### Transaction Types:
--TopicCreateTransaction - New reputation topic for each playlist
+- TopicCreateTransaction - New reputation topic for each playlist
 - TopicMessageSubmitTransaction - Each vote and reputation event
 - TopicInfoQuery - Retrieving reputation history and scores
 
@@ -237,6 +237,7 @@ Features:
 3. User now owns playlist NFT
    - Can view in /account
    - Auto-collects when contributing songs
+```
 
 ### Deployed Hedera IDs
 - HEDERA_NFT_TOKEN_ID=0.0.6917190
